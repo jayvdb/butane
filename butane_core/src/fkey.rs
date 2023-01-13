@@ -21,6 +21,7 @@ use std::fmt::{Debug, Formatter};
 ///   ...
 /// }
 ///
+#[derive(Default)]
 pub struct ForeignKey<T>
 where
     T: DataObject,
