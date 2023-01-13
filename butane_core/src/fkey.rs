@@ -5,6 +5,9 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
 
+#[allow(unused_imports)]
+use fake::{Dummy, Fake, Faker};
+
 /// Used to implement a relationship between models.
 ///
 /// Initialize using `From` or `from_pk`
@@ -21,6 +24,7 @@ use std::fmt::{Debug, Formatter};
 ///   ...
 /// }
 ///
+#[derive(Default)]
 pub struct ForeignKey<T>
 where
     T: DataObject,
@@ -197,5 +201,11 @@ where
         D: Deserializer<'de>,
     {
         Ok(Self::from_pk(T::PKType::deserialize(deserializer)?))
+    }
+}
+
+impl<T: DataObject> Dummy<Faker> for ForeignKey<T> {
+    fn dummy_with_rng<R: rand::Rng + ?Sized>(_: &Faker, _rng: &mut R) -> Self {
+        Self::new_raw()
     }
 }

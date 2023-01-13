@@ -5,6 +5,9 @@ use once_cell::unsync::OnceCell;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
+#[allow(unused_imports)]
+use fake::{Dummy, Fake, Faker};
+
 fn default_oc<T>() -> OnceCell<Vec<T>> {
     OnceCell::default()
 }
@@ -154,6 +157,13 @@ where
         vals.map(|v| v.iter())
     }
 
+    /// not helpful yet to be used with skip_serializing_if,
+    /// due to the extra `conn` which isnt available
+    /// to serde macros
+    pub fn is_empty(&self, conn: &impl ConnectionMethods) -> bool {
+        self.load(conn).unwrap().next().is_none()
+    }
+
     pub fn columns(&self) -> [Column; 2] {
         [
             Column::new("owner", self.owner_type.clone()),
@@ -169,6 +179,12 @@ impl<T: DataObject> PartialEq<Many<T>> for Many<T> {
 impl<T: DataObject> Eq for Many<T> {}
 impl<T: DataObject> Default for Many<T> {
     fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T: DataObject> Dummy<Faker> for Many<T> {
+    fn dummy_with_rng<R: rand::Rng + ?Sized>(_: &Faker, _rng: &mut R) -> Self {
         Self::new()
     }
 }
