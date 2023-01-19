@@ -20,6 +20,9 @@ pub mod uuid;
 
 use db::{BackendRow, Column, ConnectionMethods};
 
+#[allow(unused_imports)]
+use fake::{Dummy, Fake};
+
 use custom::SqlTypeCustom;
 pub use query::Query;
 pub use sqlval::*;
@@ -32,7 +35,7 @@ pub type Result<T> = std::result::Result<T, crate::Error>;
 /// in the database yet. Butane automatically creates the field
 /// `state: ObjectState` on `#[model]` structs. When initializing the
 /// state field, use `ObjectState::default()`.
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Default, Debug, Dummy)]
 pub struct ObjectState {
     pub saved: bool,
 }

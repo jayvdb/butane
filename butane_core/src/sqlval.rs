@@ -317,6 +317,7 @@ macro_rules! impl_basic_from_sql {
     };
 }
 
+#[macro_export]
 macro_rules! impl_prim_sql {
     ($prim:ty, $variant:ident, $sqltype:ident) => {
         impl_prim_sql! {$prim, $variant, $sqltype, $prim}
