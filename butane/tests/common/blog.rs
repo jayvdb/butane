@@ -1,7 +1,7 @@
 use butane::prelude::*;
 use butane::{dataresult, model};
 use butane::{db::Connection, ForeignKey, Many, ObjectState};
-use chrono::{naive::NaiveDateTime, offset::Utc};
+use chrono::{NaiveDateTime, Utc};
 
 #[model]
 #[derive(Debug, Eq, PartialEq)]
