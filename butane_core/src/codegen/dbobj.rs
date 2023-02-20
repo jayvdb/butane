@@ -343,7 +343,6 @@ where
 }
 
 fn many_table_lit(ast_struct: &ItemStruct, field: &Field, config: &Config) -> LitStr {
-    // let tyname = &ast_struct.ident;
     let ident = field
         .ident
         .clone()
