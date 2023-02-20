@@ -18,7 +18,7 @@ fn default_oc<T>() -> OnceCell<Vec<T>> {
 /// many-to-many relationship with U, owner type is T::PKType, has is
 /// U::PKType. Table name is T_ManyToMany_foo where foo is the name of
 /// the Many field
-//
+// TODO: Comment is OOD
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Many<T>
 where

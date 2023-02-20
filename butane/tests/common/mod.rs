@@ -57,6 +57,7 @@ macro_rules! maketest {
                 let backend = butane::db::get_backend(&stringify!($backend)).expect("Could not find backend");
 								let $dataname = $crate::common::[<$backend _setup>]();
 								eprintln!("connecting to {}", &$connstr);
+                println!("\nWe're now running {}\n", &stringify!($fname));
                 let mut conn = backend.connect(&$connstr).expect("Could not connect backend");
                 $crate::common::setup_db(backend, &mut conn);
                 $fname(conn);
