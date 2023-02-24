@@ -92,27 +92,28 @@ fn main() {
         .setting(clap::AppSettings::ArgRequiredElseHelp);
     let args = app.get_matches();
     match args.subcommand() {
-        ("init", sub_args) => handle_error(init(sub_args)),
-        ("makemigration", sub_args) => handle_error(make_migration(sub_args)),
-        ("migrate", _) => handle_error(migrate()),
-        ("rollback", sub_args) => handle_error(rollback(sub_args)),
-        ("embed", _) => handle_error(embed()),
-        ("list", _) => handle_error(list_migrations()),
-        ("collapse", Some(sub_args)) => {
+        Some(("init", sub_args)) => handle_error(init(Some(sub_args))),
+        Some(("makemigration", sub_args)) => handle_error(make_migration(Some(sub_args))),
+        Some(("migrate", _)) => handle_error(migrate()),
+        Some(("rollback", sub_args)) => handle_error(rollback(Some(sub_args))),
+        Some(("embed", _)) => handle_error(embed()),
+        Some(("list", _)) => handle_error(list_migrations()),
+        Some(("collapse", sub_args)) => {
             handle_error(collapse_migrations(sub_args.value_of("NAME")))
         }
-        ("clear", Some(sub_args)) => match sub_args.subcommand() {
-            ("data", Some(_)) => handle_error(clear_data()),
-            (_, _) => eprintln!("Unknown clear command. Try: clear data"),
+        Some(("clear", sub_args)) => match sub_args.subcommand() {
+            Some(("data", _)) => handle_error(clear_data()),
+            _ => eprintln!("Unknown clear command. Try: clear data"),
         },
-        ("delete", Some(sub_args)) => match sub_args.subcommand() {
-            ("table", Some(sub_args2)) => {
+        Some(("delete", sub_args)) => match sub_args.subcommand() {
+            Some(("table", sub_args2)) => {
                 handle_error(delete_table(sub_args2.value_of("TABLE").unwrap()))
             }
-            (_, _) => eprintln!("Unknown delete command. Try: delete table"),
+            _ => eprintln!("Unknown delete command. Try: delete table"),
         },
-        ("clean", _) => handle_error(clean()),
-        (cmd, _) => eprintln!("Unknown command {cmd}"),
+        Some(("clean", _)) => handle_error(clean()),
+        Some((cmd, _)) => eprintln!("Unknown command {cmd}"),
+        None => eprintln!("Unknown command"),
     }
 }
 
