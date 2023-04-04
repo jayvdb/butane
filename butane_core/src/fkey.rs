@@ -6,7 +6,7 @@ use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
 
 #[cfg(feature = "fake")]
-use fake::{Dummy, Faker};
+use fake::{Dummy, Faker, Fake};
 
 /// Used to implement a relationship between models.
 ///
@@ -204,8 +204,21 @@ where
 
 #[cfg(feature = "fake")]
 /// Fake data support is currently limited to empty ForeignKey relationships.
-impl<T: DataObject> Dummy<Faker> for ForeignKey<T> {
-    fn dummy_with_rng<R: rand::Rng + ?Sized>(_: &Faker, _rng: &mut R) -> Self {
-        Self::new_raw()
+impl<T: DataObject + Dummy<Faker>> Dummy<Faker> for ForeignKey<T> {
+    fn dummy_with_rng<R: rand::Rng + ?Sized>(_: &Faker, _rng: &mut R) -> Self
+    //where <T as DataObject>::PKType: Dummy<Faker>
+    {
+        //let dummy = Self::from_pk( Faker.fake());
+        let obj = Faker.fake::<T>();
+        let ret = Self::new_raw();
+        #[allow(unused_must_use)]
+        /*dummy.val
+            .get_or_try_init(|| {
+                Ok::<std::boxed::Box<T>, ()>(Box::new(Faker.fake::<T>()))
+            }).ok();*/
+        ret.val.set(Box::new(obj)).ok();
+        //ret.valpk.set(obj.pk());
+        ret
+        //ForeignKey::<T>::from(Faker.fake::<T>())
     }
 }
