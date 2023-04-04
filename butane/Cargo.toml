@@ -40,7 +40,7 @@ chrono = { version = "0.4", default-features = false, features = [
   "std",
 ] }
 env_logger = "0.10"
-fake = { version = "2.5", features = [
+fake = { git = "https://github.com/cksac/fake-rs", features = [
   "chrono",
   "derive",
   "uuid",

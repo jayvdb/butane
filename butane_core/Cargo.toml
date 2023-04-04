@@ -27,7 +27,8 @@ chrono = { version = "0.4", default-features = false, features = [
   "serde",
   "std",
 ], optional = true }
-fake = { version = "2.5", optional = true }
+#fake = { version = "2.5", features = [
+fake = { git = "https://github.com/cksac/fake-rs", optional = true }
 fallible-iterator = "0.2"
 fallible-streaming-iterator = "0.1"
 fs2 = "0.4" # for file locks
