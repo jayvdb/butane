@@ -29,3 +29,6 @@ lazy_static = "1.4"
 quote = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+
+[dev-dependencies]
+trycmd = { version = "0.14", features = ["debug"] }
