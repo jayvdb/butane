@@ -159,14 +159,14 @@ pub fn pg_connstr(data: &PgSetupData) -> String {
     data.connstr.clone()
 }
 
-pub async fn setup_db(backend: Box<dyn Backend>, conn: &mut Connection, migrate: bool) {
+fn setup_db_common(migrate: bool) -> Option<MemMigrations> {
     let mut root = std::env::current_dir().unwrap();
     root.push(".butane/migrations");
     let mut disk_migrations = migrations::from_root(&root);
     let disk_current = disk_migrations.current();
     eprintln!("{:?}", disk_current);
     if !migrate {
-        return;
+        return None;
     }
     // Create an in-memory Migrations and write only to that. This
     // allows concurrent tests to avoid stomping on each other and is
@@ -175,18 +175,23 @@ pub async fn setup_db(backend: Box<dyn Backend>, conn: &mut Connection, migrate:
     let mem_current = mem_migrations.current();
 
     migrations::copy_migration(disk_current, mem_current).unwrap();
+    Some(mem_migrations)
+}
 
-    assert!(
-        mem_migrations
-            .create_migration(&backend, "init", None)
-            .expect("expected to create migration without error"),
-        "expected to create migration"
-    );
-    println!("created current migration");
-    let to_apply = mem_migrations.unapplied_migrations(conn).await.unwrap();
-    for m in to_apply {
-        println!("Applying migration {}", m.name());
-        m.apply(conn).await.unwrap();
+pub async fn setup_db(backend: Box<dyn Backend>, conn: &mut Connection, migrate: bool) {
+    if let Some(mut mem_migrations) = setup_db_common(migrate) {
+        assert!(
+            mem_migrations
+                .create_migration(&backend, "init", None)
+                .expect("expected to create migration without error"),
+            "expected to create migration"
+        );
+        println!("created current migration");
+        let to_apply = mem_migrations.unapplied_migrations(conn).await.unwrap();
+        for m in to_apply {
+            println!("Applying migration {}", m.name());
+            m.apply(conn).await.unwrap();
+        }
     }
 }
 
