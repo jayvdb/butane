@@ -75,7 +75,7 @@ mod internal {
         async()
     )]
     #[async_trait(?Send)]
-    pub trait BackendConnection: ConnectionMethods + Debug + AsyncRequiresSend {
+    pub trait BackendConnection: ConnectionMethods + Debug + Send {
         /// Begin a database transaction. The transaction object must be
         /// used in place of this connection until it is committed or aborted.
         async fn transaction(&mut self) -> Result<Transaction<'_>>;

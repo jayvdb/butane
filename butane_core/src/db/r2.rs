@@ -1,7 +1,21 @@
-use super::connmethods::ConnectionMethodWrapper;
-use super::*;
-use crate::Result;
+use std::ops::Deref;
+
+use super::connmethods::{RawQueryResult};
+
+use super::connmethods::sync::ConnectionMethodWrapper;
+use super::sync::{
+    Connection, Backend, BackendConnection, BackendTransaction, ConnectionMethods,
+    
+};
+use crate::db::ConnectionSpec;
+//use crate::connection_method_wrapper;
+
+use crate::{Column, query::BoolExpr, Error, Result, SqlVal, SqlValRef};
+
 pub use r2d2::ManageConnection;
+pub use r2d2::PooledConnection;
+pub use r2d2::PooledConnection as PooledConnectionSync;
+//pub use r2d2::PooledConnection as PooledConnectionAsync;
 
 /// R2D2 support for Butane. Implements [`r2d2::ManageConnection`].
 #[derive(Clone, Debug)]
@@ -19,7 +33,10 @@ impl ManageConnection for ConnectionManager {
     type Error = crate::Error;
 
     fn connect(&self) -> Result<Self::Connection> {
-        crate::db::connect(&self.spec)
+        //crate::db::connect(&self.spec)
+        super::get_backend_sync(&self.spec.backend_name)
+        .ok_or_else(|| Error::UnknownBackend(self.spec.backend_name.clone()))?
+        .connect(&self.spec.conn_str)
     }
 
     fn is_valid(&self, conn: &mut Self::Connection) -> Result<()> {
@@ -31,11 +48,11 @@ impl ManageConnection for ConnectionManager {
     }
 }
 
-impl ConnectionMethodWrapper for r2d2::PooledConnection<ConnectionManager> {
+impl ConnectionMethodWrapper for PooledConnection<ConnectionManager> {
     type Wrapped = Connection;
     fn wrapped_connection_methods(&self) -> Result<&Connection> {
         Ok(self.deref())
     }
 }
 
-connection_method_wrapper!(r2d2::PooledConnection<ConnectionManager>);
+//connection_method_wrapper!(PooledConnection<ConnectionManager>);

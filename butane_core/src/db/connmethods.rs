@@ -66,18 +66,30 @@ mod internal {
         /// Tests if a table exists in the database.
         async fn has_table(&self, table: &str) -> Result<bool>;
     }
+
+    #[maybe_async_cfg::maybe(
+        idents(
+            ConnectionMethods(sync = "ConnectionMethodsSync", async),
+        ),
+        sync(), async())]
+    pub trait ConnectionMethodWrapper {
+        type Wrapped: ConnectionMethods;
+        fn wrapped_connection_methods(&self) -> Result<&Self::Wrapped>;
+    }
+    
 }
 
 pub use internal::ConnectionMethodsAsync as ConnectionMethods;
 
-pub trait ConnectionMethodWrapper {
+/*pub trait ConnectionMethodWrapper {
     type Wrapped: ConnectionMethods;
     fn wrapped_connection_methods(&self) -> Result<&Self::Wrapped>;
-}
+}*/
 
 pub mod sync {
     use super::*;
     pub use internal::ConnectionMethodsSync as ConnectionMethods;
+    pub use internal::ConnectionMethodWrapperSync as ConnectionMethodWrapper;
 }
 
 /// Represents a database column. Most users do not need to use this
