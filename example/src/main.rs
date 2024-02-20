@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use butane::db::{Connection, ConnectionSpec};
 use butane::prelude::*;
+use butane::FromSql;
 use butane::{find, model, query, AutoPk, Error, ForeignKey, Many};
 
 type Result<T> = std::result::Result<T, Error>;
@@ -64,7 +65,8 @@ async fn query() -> Result<()> {
     post.tags.add(&tag)?;
     post.save(&conn).await.unwrap();
 
-    let _specific_post = Post::get(&conn, 1).await?;
+    let id = butane::AutoPk::from_sql(butane::SqlVal::BigInt(1)).unwrap();
+    let _specific_post = Post::get(&conn, id).await?;
     let published_posts = query!(Post, published == true).limit(5).load(&conn).await?;
     assert!(!published_posts.is_empty());
     let unliked_posts = query!(Post, published == true && likes < 5)

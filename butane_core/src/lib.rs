@@ -3,11 +3,11 @@
 #![allow(clippy::iter_nth_zero)]
 #![allow(clippy::upper_case_acronyms)] //grandfathered, not going to break API to rename
 #![deny(missing_docs)]
+use std::borrow::Borrow;
 use std::cmp::{Eq, PartialEq};
 use std::default::Default;
 
 use async_trait::async_trait;
-
 use serde::{Deserialize, Serialize};
 use thiserror::Error as ThisError;
 
@@ -85,7 +85,7 @@ pub trait DataObject: DataResult<DBO = Self> + Sync {
     fn pk(&self) -> &Self::PKType;
     /// Find this object in the database based on primary key.
     /// Returns `Error::NoSuchObject` if the primary key does not exist.
-    async fn get(conn: &impl ConnectionMethods, id: impl ToSql + Send + Sync) -> Result<Self>
+    async fn get(conn: &impl ConnectionMethods, id: impl Borrow<Self::PKType> + Send + Sync) -> Result<Self>
     where
         Self: Sized,
         Self::PKType: Sync,
@@ -94,14 +94,14 @@ pub trait DataObject: DataResult<DBO = Self> + Sync {
     }
     /// Find this object in the database based on primary key.
     /// Returns `None` if the primary key does not exist.
-    async fn try_get(conn: &impl ConnectionMethods, id: impl ToSql + Send + Sync) -> Result<Option<Self>>
+    async fn try_get(conn: &impl ConnectionMethods, id: impl Borrow<Self::PKType> + Send + Sync) -> Result<Option<Self>>
     where
         Self: Sized,
     {
         Ok(<Self as DataResult>::query()
             .filter(query::BoolExpr::Eq(
                 Self::PKCOL,
-                query::Expr::Val(id.to_sql()),
+                query::Expr::Val(id.borrow().to_sql()),
             ))
             .limit(1)
             .load(conn)

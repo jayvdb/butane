@@ -1,9 +1,3 @@
-<<<<<<< HEAD
-use butane_core::db::{connect, get_backend, pg, Backend, Connection, ConnectionSpec};
-use butane_core::migrations::{self, MemMigrations, Migration, Migrations, MigrationsMut};
-use once_cell::sync::Lazy;
-=======
->>>>>>> master
 use std::io::{BufRead, BufReader, Read, Write};
 use std::ops::Deref;
 use std::path::PathBuf;
@@ -14,8 +8,6 @@ use butane_core::db::{connect, get_backend, pg, sqlite, Backend, Connection, Con
 use butane_core::migrations::{self, MemMigrations, Migration, Migrations, MigrationsMut};
 use once_cell::sync::Lazy;
 use uuid::Uuid;
-
-use butane_core::db::sqlite;
 
 pub async fn pg_connection() -> (Connection, PgSetupData) {
     let backend = get_backend(pg::BACKEND_NAME).unwrap();

@@ -1,4 +1,15 @@
 //! Postgresql database backend
+use std::fmt::Write;
+
+use async_trait::async_trait;
+use bytes::BufMut;
+#[cfg(feature = "datetime")]
+use chrono::NaiveDateTime;
+use futures_util::stream::StreamExt;
+use tokio;
+use tokio_postgres as postgres;
+use tokio_postgres::GenericClient;
+
 use super::connmethods::VecRows;
 use super::helper;
 use super::*;
@@ -7,20 +18,11 @@ use crate::migrations::adb::{AColumn, ARef, ATable, Operation, TypeIdentifier, A
 use crate::query::Expr;
 use crate::{debug, query, warn};
 use crate::{Result, SqlType, SqlVal, SqlValRef};
-use async_trait::async_trait;
-use bytes::BufMut;
-#[cfg(feature = "datetime")]
-use chrono::NaiveDateTime;
-use futures_util::stream::StreamExt;
-use std::fmt::Write;
-use tokio;
-use tokio_postgres as postgres;
-use tokio_postgres::GenericClient;
 
 /// The name of the postgres backend.
 pub const BACKEND_NAME: &str = "pg";
 
-/// Pg [`Backend`][crate::db::Backend] implementation.
+/// Postgres [`Backend`] implementation.
 #[derive(Debug, Default, Clone)]
 pub struct PgBackend {}
 impl PgBackend {

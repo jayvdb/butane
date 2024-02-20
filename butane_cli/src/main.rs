@@ -131,7 +131,7 @@ However if the migration has been manually edited, it will need to be manually r
         Some(("makemigration", sub_args)) => {
             handle_error(make_migration(&base_dir, Some(sub_args)))
         }
-        Some(("detach-migration", _)) => handle_error(detach_latest_migration(&base_dir)).await,
+        Some(("detach-migration", _)) => handle_error(detach_latest_migration(&base_dir).await),
         Some(("migrate", _)) => handle_error(migrate(&base_dir).await),
         Some(("rollback", sub_args)) => handle_error(rollback(&base_dir, Some(sub_args)).await),
         Some(("embed", _)) => handle_error(embed(&base_dir)),

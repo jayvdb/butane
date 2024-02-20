@@ -7,6 +7,12 @@ use std::pin::Pin;
 #[cfg(feature = "log")]
 use std::sync::Once;
 
+#[cfg(feature = "datetime")]
+use chrono::naive::NaiveDateTime;
+use fallible_streaming_iterator::FallibleStreamingIterator;
+use pin_project::pin_project;
+
+
 use super::sync::{
     Backend, BackendConnection, BackendTransaction, Connection, ConnectionMethods, Transaction,
 };
@@ -15,10 +21,7 @@ use crate::db::connmethods::BackendRows;
 use crate::migrations::adb::{AColumn, ARef, ATable, Operation, TypeIdentifier, ADB};
 use crate::query::{BoolExpr, Order};
 use crate::{debug, query, Error, Result, SqlType, SqlVal, SqlValRef};
-#[cfg(feature = "datetime")]
-use chrono::naive::NaiveDateTime;
-use fallible_streaming_iterator::FallibleStreamingIterator;
-use pin_project::pin_project;
+
 #[cfg(feature = "datetime")]
 const SQLITE_DT_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
 
@@ -43,7 +46,7 @@ fn log_callback(error_code: std::ffi::c_int, message: &str) {
     }
 }
 
-/// SQLite [`Backend`][crate::db::Backend] implementation.
+/// SQLite [`Backend`] implementation.
 #[derive(Debug, Default, Clone)]
 pub struct SQLiteBackend {}
 impl SQLiteBackend {

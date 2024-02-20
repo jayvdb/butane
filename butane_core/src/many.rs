@@ -2,11 +2,10 @@
 #![deny(missing_docs)]
 use std::borrow::Cow;
 
-use tokio::sync::OnceCell;
-
 #[cfg(feature = "fake")]
 use fake::{Dummy, Faker};
 use serde::{Deserialize, Serialize};
+use tokio::sync::OnceCell;
 
 use crate::db::{Column, ConnectionMethods};
 use crate::query::{BoolExpr, Expr, OrderDirection, Query};
@@ -102,7 +101,7 @@ where
             .map(|v| v.iter())
     }
 
-    // todo support save and load for sync too
+    // TODO support save and load for sync too
     /// Used by macro-generated code. You do not need to call this directly.
     pub async fn save(&mut self, conn: &impl crate::ConnectionMethods) -> Result<()> {
         let owner = self.owner.as_ref().ok_or(Error::NotInitialized)?;

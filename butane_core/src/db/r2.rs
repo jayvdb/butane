@@ -1,17 +1,13 @@
 //! R2D2 support for Butane.
-use super::sync::{BackendConnection, Connection, ConnectionMethods};
-use super::{Column, ConnectionSpec, RawQueryResult};
-use crate::query::{BoolExpr, Order};
-use crate::{Result, SqlVal, SqlValRef};
-pub use r2d2::ManageConnection;
 use std::ops::Deref;
 
-use crate::connection_method_wrapper;
-use crate::db::connmethods::ConnectionMethodWrapper;
+pub use r2d2::ManageConnection;
+
 use crate::db::{
-    BackendConnection, Column, Connection, ConnectionMethods, ConnectionSpec, RawQueryResult,
+    Column, ConnectionSpec, RawQueryResult,
 };
-use crate::{query::BoolExpr, Result, SqlVal, SqlValRef};
+use crate::db::sync::{BackendConnection, Connection, ConnectionMethods};
+use crate::{query::{BoolExpr, Order}, Result, SqlVal, SqlValRef};
 
 /// R2D2 support for Butane. Implements [`r2d2::ManageConnection`].
 #[derive(Clone, Debug)]

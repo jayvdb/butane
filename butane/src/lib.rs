@@ -69,21 +69,13 @@ pub mod db {
 ///   rank: i32,
 ///   nationality: String
 /// }
-<<<<<<< HEAD
 /// # tokio_test::block_on(async {
 ///   let e: BoolExpr = filter!(Contestant, nationality == "US" && rank < 42);
 ///   let first_place = 1;
 ///   let e2 = filter!(Contestant, rank == { first_place });
 ///   let e3 = filter!(Contestant, name.like("A%"));
 /// # })
-///```
-=======
-/// let e: BoolExpr = filter!(Contestant, nationality == "US" && rank < 42);
-/// let first_place = 1;
-/// let e2 = filter!(Contestant, rank == { first_place });
-/// let e3 = filter!(Contestant, name.like("A%"));
 /// ```
->>>>>>> master
 ///
 /// [`BoolExpr`]: crate::query::BoolExpr
 /// [`Query`]: crate::query::Query
@@ -162,12 +154,8 @@ macro_rules! colname {
 /// # tokio_test::block_on(async {
 /// let conn = butane::db::connect(&ConnectionSpec::new("sqlite", "foo.db")).await.unwrap();
 /// let alice: Result<Contestant, butane::Error> = find!(Contestant, name == "Alice", &conn);
-<<<<<<< HEAD
 /// # })
-///```
-=======
 /// ```
->>>>>>> master
 ///
 /// [`filter]: crate::filter
 /// [`Result`]: crate::Result

@@ -2,6 +2,7 @@
 use std::env::args;
 
 use butane::prelude::*;
+use butane::FromSql;
 use getting_started::models::Post;
 use getting_started::*;
 
@@ -13,6 +14,9 @@ async fn main() {
         .parse::<i32>()
         .expect("Invalid ID");
     let conn = establish_connection().await;
+
+    // TODO: This should be unnecessary.
+    let id = butane::AutoPk::from_sql(butane::SqlVal::Int(id)).unwrap();
 
     let mut post = Post::get(&conn, id)
         .await

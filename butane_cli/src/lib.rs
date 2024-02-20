@@ -107,8 +107,8 @@ pub async fn detach_latest_migration(base_dir: &PathBuf) -> Result<()> {
         std::process::exit(1);
     }
     if let Ok(spec) = db::ConnectionSpec::load(base_dir) {
-        let conn = db::connect(&spec)?;
-        if let Some(top_applied_migration) = ms.last_applied_migration(&conn)? {
+        let conn = db::connect(&spec).await?;
+        if let Some(top_applied_migration) = ms.last_applied_migration(&conn).await? {
             if top_applied_migration == top_migration {
                 eprintln!("Can not detach an applied migration");
                 std::process::exit(1);

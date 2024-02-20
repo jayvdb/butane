@@ -45,7 +45,7 @@ impl AsyncAdapterEnv {
         context: &SyncSendPtrMut<T>,
         func: F,
     ) -> Result<U>
-    // todo can this just be result
+    // TODO can this just be result
     where
         F: FnOnce(&'c T) -> Result<U> + Send,
         F: 'result,
@@ -54,7 +54,7 @@ impl AsyncAdapterEnv {
         's: 'result,
         'c: 'result,
     {
-        // todo parts of this can be shared with the other two invoke functions
+        // TODO parts of this can be shared with the other two invoke functions
         let (tx, rx) = oneshot::channel();
         let context_ptr = SendPtr::new(context.inner);
         let func_taking_ptr = |ctx: SendPtr<T>| func(unsafe { ctx.inner.as_ref() }.unwrap());
@@ -152,7 +152,7 @@ struct SyncSendPtrMut<T: ?Sized> {
 }
 impl<T: ?Sized> SyncSendPtrMut<T> {
     fn new(inner: *mut T) -> Self {
-        // todo should this be unsafe
+        // TODO should this be unsafe
         Self { inner }
     }
 }
@@ -163,7 +163,7 @@ where
     fn from(val: T) -> Self {
         Self {
             inner: Box::into_raw(Box::new(val)),
-        } // todo should this be unsafe
+        } // TODO should this be unsafe
     }
 }
 unsafe impl<T: Debug + ?Sized> Send for SyncSendPtrMut<T> {}
@@ -182,7 +182,7 @@ pub(super) struct AsyncAdapter<T: ?Sized> {
 }
 
 impl<T: ?Sized> AsyncAdapter<T> {
-    //todo document what this is for
+    //TODO document what this is for
     fn new_internal<U: ?Sized>(&self, context_ptr: SyncSendPtrMut<U>) -> AsyncAdapter<U> {
         AsyncAdapter {
             env: self.env.clone(),
@@ -200,7 +200,7 @@ impl<T: ?Sized> AsyncAdapter<T> {
         'c: 'result,
         's: 'c,
     {
-        // todo verify the interior mutability won't panic here
+        // TODO verify the interior mutability won't panic here
         self.env.invoke(&self.context, func).await
     }
 
@@ -211,7 +211,7 @@ impl<T: ?Sized> AsyncAdapter<T> {
         U: Send + 'result,
         'c: 'result,
     {
-        // todo verify the interior mutability won't panic here
+        // TODO verify the interior mutability won't panic here
         self.env.invoke_mut(&self.context, func).await
     }
 
@@ -222,7 +222,7 @@ impl<T: ?Sized> AsyncAdapter<T> {
         U: Send + 'result,
         'c: 'result,
     {
-        // todo verify the interior mutability won't panic here
+        // TODO verify the interior mutability won't panic here
         self.env.invoke_blocking(self.context.inner, func)
     }
 }
@@ -233,7 +233,7 @@ impl<T> AsyncAdapter<T> {
         Self: Sized,
         F: FnOnce() -> Result<T> + Send,
     {
-        // TOOD execute the create context function on the thread
+        // TODO execute the create context function on the thread
         let context = create_context()?;
         Ok(Self {
             env: Arc::new(AsyncAdapterEnv::new()),
@@ -356,20 +356,20 @@ where
         // no sync-to-async translation needed but we still have to
         // dispatch to our worker thread because only that thread owns
         // the BackendConnection object.
-        // todo clean up unwrap
+        // TODO clean up unwrap
         Box::new(BackendAdapter::new(
             self.invoke_blocking(|conn| Ok(conn.backend())).unwrap(),
         ))
     }
     fn backend_name(&self) -> &'static str {
-        // todo clean up unwrap
+        // TODO clean up unwrap
         self.invoke_blocking(|conn| Ok(conn.backend_name()))
             .unwrap()
     }
     /// Tests if the connection has been closed. Backends which do not
     /// support this check should return false.
     fn is_closed(&self) -> bool {
-        // todo clean up unwrap
+        // TODO clean up unwrap
         self.invoke_blocking(|conn| Ok(conn.is_closed())).unwrap()
     }
 }

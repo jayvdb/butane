@@ -273,7 +273,7 @@ async fn only_auto_pk(conn: Connection) {
 testall!(only_auto_pk);
 
 async fn basic_committed_transaction(mut conn: Connection) {
-    let tr = conn.transaction().unwrap();
+    let tr = conn.transaction().await.unwrap();
 
     // Create an object with a transaction and commit it
     let mut foo = Foo::new(1);
@@ -365,7 +365,7 @@ testall!(fkey_same_type);
 async fn cant_save_unsaved_fkey(conn: Connection) {
     let foo = Foo::new(1);
     let mut bar = Bar::new("tarzan", foo);
-    assert!(bar.save(&conn).is_err());
+    assert!(bar.save(&conn).await.is_err());
 }
 testall!(cant_save_unsaved_fkey);
 

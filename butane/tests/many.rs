@@ -49,35 +49,36 @@ struct AutoItem {
 
 async fn load_sorted_from_many(conn: Connection) {
     let mut cats_blog = Blog::new(1, "Cats");
-    cats_blog.save(&conn).unwrap();
+    cats_blog.save(&conn).await.unwrap();
     let mut post = Post::new(
         1,
         "The Cheetah",
         "This post is about a fast cat.",
         &cats_blog,
     );
-    let tag_fast = create_tag(&conn, "fast");
-    let tag_cat = create_tag(&conn, "cat");
-    let tag_european = create_tag(&conn, "european");
+    let tag_fast = create_tag(&conn, "fast").await;
+    let tag_cat = create_tag(&conn, "cat").await;
+    let tag_european = create_tag(&conn, "european").await;
 
     post.tags.add(&tag_fast).unwrap();
     post.tags.add(&tag_cat).unwrap();
     post.tags.add(&tag_european).unwrap();
-    post.save(&conn).unwrap();
+    post.save(&conn).await.unwrap();
 
-    let post2 = Post::get(&conn, post.id).unwrap();
+    let post2 = Post::get(&conn, post.id).await.unwrap();
     let mut tag_iter = post2
         .tags
         .load_ordered(&conn, OrderDirection::Ascending)
+        .await
         .unwrap();
     assert_eq!(tag_iter.next().unwrap().tag, "cat");
     assert_eq!(tag_iter.next().unwrap().tag, "european");
     assert_eq!(tag_iter.next().unwrap().tag, "fast");
 
-    let post3 = Post::get(&conn, post.id).unwrap();
+    let post3 = Post::get(&conn, post.id).await.unwrap();
     let mut tag_iter = post3
         .tags
-        .load_ordered(&conn, OrderDirection::Descending)
+        .load_ordered(&conn, OrderDirection::Descending).await
         .unwrap();
     assert_eq!(tag_iter.next().unwrap().tag, "fast");
     assert_eq!(tag_iter.next().unwrap().tag, "european");
@@ -144,28 +145,28 @@ testall!(remove_multiple_from_many);
 
 async fn delete_all_from_many(conn: Connection) {
     let mut cats_blog = Blog::new(1, "Cats");
-    cats_blog.save(&conn).unwrap();
+    cats_blog.save(&conn).await.unwrap();
     let mut post = Post::new(
         1,
         "The Cheetah",
         "This post is about a fast cat.",
         &cats_blog,
     );
-    let tag_fast = create_tag(&conn, "fast");
-    let tag_cat = create_tag(&conn, "cat");
-    let tag_european = create_tag(&conn, "european");
-    let tag_striped = create_tag(&conn, "striped");
+    let tag_fast = create_tag(&conn, "fast").await;
+    let tag_cat = create_tag(&conn, "cat").await;
+    let tag_european = create_tag(&conn, "european").await;
+    let tag_striped = create_tag(&conn, "striped").await;
 
     post.tags.add(&tag_fast).unwrap();
     post.tags.add(&tag_cat).unwrap();
     post.tags.add(&tag_european).unwrap();
-    post.save(&conn).unwrap();
+    post.save(&conn).await.unwrap();
     post.tags.add(&tag_striped).unwrap();
 
-    post.tags.delete(&conn).unwrap();
+    post.tags.delete(&conn).await.unwrap();
 
-    let post2 = Post::get(&conn, post.id).unwrap();
-    assert_eq!(post2.tags.load(&conn).unwrap().count(), 0);
+    let post2 = Post::get(&conn, post.id).await.unwrap();
+    assert_eq!(post2.tags.load(&conn).await.unwrap().count(), 0);
 }
 testall!(delete_all_from_many);
 

@@ -34,6 +34,13 @@ impl<T: PrimaryKeyType> AutoPk<T> {
         self.inner.as_ref().expect("PK is not generated yet!")
     }
 }
+/*
+impl<T: ?Sized> Borrow<T> for T {
+    #[rustc_diagnostic_item = "noop_method_borrow"]
+    fn borrow(&self) -> &T {
+        self
+    }
+}*/
 
 impl<T: PrimaryKeyType> FromSql for AutoPk<T> {
     /// Used to convert a SqlValRef into another type.

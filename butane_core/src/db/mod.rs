@@ -12,11 +12,8 @@
 //!    what a `BackendConnection` can do, but allows using a single concrete type that is not tied to a particular
 //!    database backend. It is returned by the `connect` method.
 
-use crate::query::BoolExpr;
-use crate::{migrations::adb, Error, Result, SqlVal, SqlValRef};
-use async_trait::async_trait;
-use dyn_clone::DynClone;
-use serde::{Deserialize, Serialize};
+#![allow(missing_docs)]
+
 use std::borrow::Cow;
 use std::fmt::Debug;
 use std::fs;
@@ -24,12 +21,21 @@ use std::io::Write;
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
 
+use async_trait::async_trait;
+use dyn_clone::DynClone;
+use serde::{Deserialize, Serialize};
+
+use crate::query::BoolExpr;
+use crate::{migrations::adb, Error, Result, SqlVal, SqlValRef};
+
 #[cfg(feature = "async-adapter")]
 mod adapter;
 #[cfg(feature = "async-adapter")]
 pub use adapter::BackendAdapter;
 
 mod connmethods;
+pub use connmethods::{BackendRow, BackendRows, Column, ConnectionMethods, MapDeref, QueryResult, RawQueryResult};
+
 mod helper;
 mod macros;
 #[cfg(feature = "pg")]
@@ -46,9 +52,6 @@ pub use r2::ConnectionManager;
 // Macros are always exported at the root of the crate
 use crate::connection_method_wrapper;
 
-pub use connmethods::{BackendRow, BackendRows, Column, MapDeref, QueryResult, RawQueryResult};
-
-pub use connmethods::ConnectionMethods;
 
 mod internal {
     use super::*;
@@ -249,7 +252,7 @@ pub use internal::ConnectionAsync as Connection;
 pub use internal::TransactionAsync as Transaction;
 
 // unused may occur dependending on backends being compiled
-// todo include by feature instead
+// TODO include by feature instead
 #[allow(unused)]
 use internal::BackendTransactionAsync as BackendTransaction;
 
@@ -360,13 +363,13 @@ pub fn get_backend_sync(name: &str) -> Option<Box<dyn sync::Backend>> {
     match name {
         #[cfg(feature = "sqlite")]
         sqlite::BACKEND_NAME => Some(Box::new(sqlite::SQLiteBackend::new())),
-        // todo wrap PG
+        // TODO wrap PG
         _ => None,
     }
 }
 
 /// Connect to a database. For non-boxed connections, see individual
-/// [Backend][crate::db::Backend] implementations.
+/// [`Backend`] implementations.
 pub async fn connect(spec: &ConnectionSpec) -> Result<Connection> {
     get_backend(&spec.backend_name)
         .ok_or_else(|| Error::UnknownBackend(spec.backend_name.clone()))?
@@ -375,7 +378,7 @@ pub async fn connect(spec: &ConnectionSpec) -> Result<Connection> {
 }
 
 /// Connect to a database. For non-boxed connections, see individual
-/// [Backend][crate::db::Backend] implementations.
+/// [`Backend`] implementations.
 pub fn connect_sync(spec: &ConnectionSpec) -> Result<sync::Connection> {
     get_backend_sync(&spec.backend_name)
         .ok_or_else(|| Error::UnknownBackend(spec.backend_name.clone()))?

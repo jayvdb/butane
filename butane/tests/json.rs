@@ -127,7 +127,7 @@ impl FooFullPrefixHashMap {
         }
     }
 }
-fn basic_hashmap_full_prefix(conn: Connection) {
+async fn basic_hashmap_full_prefix(conn: Connection) {
     // create
     let id = 4;
     let mut foo = FooFullPrefixHashMap::new(id);
@@ -135,16 +135,16 @@ fn basic_hashmap_full_prefix(conn: Connection) {
     data.insert("a".to_string(), "1".to_string());
 
     foo.val = data;
-    foo.save(&conn).unwrap();
+    foo.save(&conn).await.unwrap();
 
     // read
-    let mut foo2 = FooFullPrefixHashMap::get(&conn, id).unwrap();
+    let mut foo2 = FooFullPrefixHashMap::get(&conn, id).await.unwrap();
     assert_eq!(foo, foo2);
 
     // update
     foo2.bar = 43;
-    foo2.save(&conn).unwrap();
-    let foo3 = FooFullPrefixHashMap::get(&conn, id).unwrap();
+    foo2.save(&conn).await.unwrap();
+    let foo3 = FooFullPrefixHashMap::get(&conn, id).await.unwrap();
     assert_eq!(foo2, foo3);
 }
 testall!(basic_hashmap_full_prefix);
@@ -165,7 +165,7 @@ impl FooBTreeMap {
         }
     }
 }
-fn basic_btreemap(conn: Connection) {
+async fn basic_btreemap(conn: Connection) {
     // create
     let id = 4;
     let mut foo = FooBTreeMap::new(id);
@@ -173,16 +173,16 @@ fn basic_btreemap(conn: Connection) {
     data.insert("a".to_string(), "1".to_string());
 
     foo.val = data;
-    foo.save(&conn).unwrap();
+    foo.save(&conn).await.unwrap();
 
     // read
-    let mut foo2 = FooBTreeMap::get(&conn, id).unwrap();
+    let mut foo2 = FooBTreeMap::get(&conn, id).await.unwrap();
     assert_eq!(foo, foo2);
 
     // update
     foo2.bar = 43;
-    foo2.save(&conn).unwrap();
-    let foo3 = FooBTreeMap::get(&conn, id).unwrap();
+    foo2.save(&conn).await.unwrap();
+    let foo3 = FooBTreeMap::get(&conn, id).await.unwrap();
     assert_eq!(foo2, foo3);
 }
 testall!(basic_btreemap);

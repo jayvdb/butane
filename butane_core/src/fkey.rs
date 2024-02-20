@@ -3,11 +3,10 @@
 use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
 
-use tokio::sync::OnceCell;
-
 #[cfg(feature = "fake")]
 use fake::{Dummy, Faker};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use tokio::sync::OnceCell;
 
 use crate::{
     AsPrimaryKey, DataObject, Error, FieldType, FromSql, Result, SqlType, SqlVal, SqlValRef, ToSql,
@@ -82,7 +81,7 @@ impl<T: DataObject> ForeignKey<T> {
     }
 }
 
-//todo support sync load with ForeignKey too
+// TODO support sync load with ForeignKey too
 impl<T: DataObject + Send> ForeignKey<T> {
     /// Loads the value referred to by this foreign key from the
     /// database if necessary and returns a reference to it.

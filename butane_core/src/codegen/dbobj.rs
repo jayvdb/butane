@@ -39,7 +39,7 @@ pub fn impl_dbobject(ast_struct: &ItemStruct, config: &Config) -> TokenStream2 {
     let save_core = if auto_pk && values.len() == 1 {
         quote!(
             if !butane::PrimaryKeyType::is_valid(self.pk()) {
-                let pk = conn.insert_returning_pk(Self::TABLE, &[], &pkcol, &[])?;
+                let pk = conn.insert_returning_pk(Self::TABLE, &[], &pkcol, &[]).await?;
                 Some(butane::FromSql::from_sql(pk)?)
             } else {
                 None
@@ -63,11 +63,11 @@ pub fn impl_dbobject(ast_struct: &ItemStruct, config: &Config) -> TokenStream2 {
                     butane::ToSql::to_sql_ref(self.pk()),
                     &[#save_cols],
                     &values,
-                )?;
+                ).await?;
                 None
             } else {
                 #(#values)*
-                let pk = conn.insert_returning_pk(Self::TABLE, &[#insert_cols], &pkcol, &values)?;
+                let pk = conn.insert_returning_pk(Self::TABLE, &[#insert_cols], &pkcol, &values).await?;
                 Some(butane::FromSql::from_sql(pk)?)
             };
         )
@@ -76,7 +76,7 @@ pub fn impl_dbobject(ast_struct: &ItemStruct, config: &Config) -> TokenStream2 {
         quote!(
             {
                 #(#values)*
-                conn.insert_or_replace(Self::TABLE, &[#insert_cols], &pkcol, &values)?;
+                conn.insert_or_replace(Self::TABLE, &[#insert_cols], &pkcol, &values).await?;
                 None
             };
         )
@@ -96,7 +96,7 @@ pub fn impl_dbobject(ast_struct: &ItemStruct, config: &Config) -> TokenStream2 {
                     butane::ToSql::to_sql(self.pk()),
                     #pksqltype,
                 );
-                self.#ident.save(conn)?;
+                self.#ident.save(conn).await?;
             )
         })
         .collect();
