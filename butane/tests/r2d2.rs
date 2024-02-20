@@ -1,9 +1,12 @@
-#[cfg(feature = "r2d2")]
-use butane_test_helper::{pg_connspec, setup_db, sqlite_connspec};
-
-#[cfg(feature = "r2d2")]
+#[cfg(any(feature = "pg", feature = "sqlite"))]
 use butane::db;
-#[cfg(feature = "r2d2")]
+#[cfg(feature = "pg")]
+use butane_test_helper::pg_connspec;
+#[cfg(any(feature = "pg", feature = "sqlite"))]
+use butane_test_helper::setup_db;
+#[cfg(feature = "sqlite")]
+use butane_test_helper::sqlite_connspec;
+#[cfg(any(feature = "pg", feature = "sqlite"))]
 use r2d2_for_test as r2d2;
 
 #[cfg(feature = "r2d2")]

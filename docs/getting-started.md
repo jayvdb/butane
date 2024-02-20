@@ -17,7 +17,7 @@ In `Cargo.toml`, add a dependency on Butane:
 
 ``` toml
 [dependencies]
-butane = { version = "0.5", features=["default", "sqlite"] }
+butane = { version = "0.6", features=["default", "sqlite"] }
 ```
 
 Substitute another backend instead of "sqlite" as desired ("pg" for
@@ -49,6 +49,7 @@ connection parameters. At this point, we can add a method (in our
 
 ``` rust
 use butane::db::{Connection, ConnectionSpec};
+
 pub fn establish_connection() -> Connection {
     butane::db::connect(&ConnectionSpec::load(".butane/connection.json").unwrap()).unwrap()
 }
@@ -67,15 +68,14 @@ use butane::{model, ForeignKey, Many, ObjectState};
 #[model]
 #[derive(Debug, Default)]
 pub struct Blog {
-    #[auto]
-    pub id: i64,
+    pub id: AutoPk<i64>,
     pub name: String,
 }
 impl Blog {
     pub fn new(name: impl Into<String>) -> Self {
         Blog {
-            name: name.into(),
-            ..Default::default()
+            id: AutoPk::uninitialized(),
+            name: name.into()
         }
     }
 }
@@ -98,21 +98,20 @@ The `#[model]` attribute does the heavy lifting here:
 The `id` field is special -- it's the primary key. All models must
 have a primary key. If we didn't want to name ours `id`, we could have
 added a `#[pk]` attribute to denote the primary key field. The
-`#[auto]` attribute says that the field should be populated
+`AutoPk` wrapping type says that the field should be populated
 automatically from an incrementing value. It is only allowed on
 integer types and will cause the underlying column to be
 `AUTOINCREMENT` for SQLite or `SERIAL`/`BIGSERIAL` for
-PostgreSQL. Since it's marked as `#[auto]` the value of `id` at
-construction time doesn't matter: it will be automatically set when
-the object is created (via its [`save`] method).
+PostgreSQL. When the object is created in the database via its
+[`save`] method, the `AutoPk` field will be updated to its initialized
+value.
 
 Now let's add a model to represent a blog post, and in the process take a look at a few more features.
 
 ``` rust
 #[model]
 pub struct Post {
-    #[auto]
-    pub id: i32,
+    pub id: AutoPk<i32>,
     pub title: String,
     pub body: String,
     pub published: bool,
@@ -166,7 +165,7 @@ Then we can use them in our `lib.rs`:
 ```rust
 pub mod models;
 
-use models::{Blog, Post};
+pub use models::{Blog, Post};
 ```
 
 Let's build our package now. If we look in the `.butane` directory,
@@ -249,8 +248,9 @@ doc = false
 And write its code (in `src/bin/write_post.rs`).
 
 ``` rust
-use getting_started::*;
 use std::io::{stdin, Read};
+
+use getting_started::*;
 
 fn main() {
     let conn = establish_connection();
@@ -319,7 +319,8 @@ Let's add another binary to `Cargo.toml`, this one called `show_posts`, and writ
 
 ``` rust
 use butane::query;
-use getting_started::models::*;
+
+use getting_started::models::Post;
 use getting_started::*;
 
 fn main() {
@@ -351,10 +352,12 @@ mark it as published, and save it again.
 Add `publish_post` binary to `Cargo.toml`, and write its code (in `src/bin/publish_post.rs`).
 
 ``` rust
-use self::models::Post;
-use butane::prelude::*;
-use getting_started::*;
 use std::env::args;
+
+use butane::prelude::*;
+
+use getting_started::models::Post;
+use getting_started::*;
 
 fn main() {
     let id = args()
@@ -385,10 +388,12 @@ commonly) with the `delete` method on `Query` to delete directly.
 Here's our `delete_post` program (in `src/bin/delete_post.rs`):
 
 ``` rust
-use self::models::Post;
-use getting_started::*;
-use butane::query;
 use std::env::args;
+
+use butane::query;
+
+use getting_started::models::Post;
+use getting_started::*;
 
 fn main() {
     let target = args().nth(1).expect("Expected a target to match against");
@@ -430,8 +435,7 @@ making the full model
 ``` rust
 #[model]
 pub struct Post {
-    #[auto]
-    pub id: i32,
+    pub id: AutoPk<i32>,
     pub title: String,
     pub body: String,
     pub published: bool,

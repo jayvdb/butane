@@ -1,10 +1,14 @@
+//! Library providing functionality used by butane macros and tools.
+
 #![allow(clippy::iter_nth_zero)]
 #![allow(clippy::upper_case_acronyms)] //grandfathered, not going to break API to rename
-use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
-use std::borrow::Borrow;
+#![deny(missing_docs)]
 use std::cmp::{Eq, PartialEq};
 use std::default::Default;
+
+use async_trait::async_trait;
+
+use serde::{Deserialize, Serialize};
 use thiserror::Error as ThisError;
 
 pub mod codegen;
@@ -19,8 +23,6 @@ pub mod sqlval;
 #[cfg(feature = "uuid")]
 pub mod uuid;
 
-#[cfg(feature = "fake")]
-use fake::{Dummy, Faker};
 
 use db::{BackendRow, Column, ConnectionMethods};
 mod sync {
@@ -28,39 +30,14 @@ mod sync {
     pub use crate::db::sync::ConnectionMethods;
 }
 
+mod autopk;
+pub use autopk::AutoPk;
 use custom::SqlTypeCustom;
 pub use query::Query;
-pub use sqlval::*;
+pub use sqlval::{AsPrimaryKey, FieldType, FromSql, PrimaryKeyType, SqlVal, SqlValRef, ToSql};
 
+/// Result type that uses [`crate::Error`].
 pub type Result<T> = std::result::Result<T, crate::Error>;
-
-/// Used internally by butane to track state about the object.
-///
-/// Includes information such as whether it has actually been created
-/// in the database yet. Butane automatically creates the field
-/// `state: ObjectState` on `#[model]` structs. When initializing the
-/// state field, use `ObjectState::default()`.
-#[derive(Clone, Debug, Default)]
-pub struct ObjectState {
-    pub saved: bool,
-}
-/// Two `ObjectState`s always compare as equal. This effectively
-/// removes `ObjectState` from participating in equality tests between
-/// two objects
-impl PartialEq<ObjectState> for ObjectState {
-    fn eq(&self, _other: &ObjectState) -> bool {
-        true
-    }
-}
-impl Eq for ObjectState {}
-
-#[cfg(feature = "fake")]
-/// Fake data should always have `saved` set to `false`.
-impl Dummy<Faker> for ObjectState {
-    fn dummy_with_rng<R: rand::Rng + ?Sized>(_: &Faker, _rng: &mut R) -> Self {
-        Self::default()
-    }
-}
 
 /// A type which may be the result of a database query.
 ///
@@ -73,10 +50,15 @@ impl Dummy<Faker> for ObjectState {
 pub trait DataResult: Sized {
     /// Corresponding object type.
     type DBO: DataObject;
+
+    /// Metadata for eaCH column.
     const COLUMNS: &'static [Column];
+
+    /// Load an object from a database backend row.
     fn from_row<'a>(row: &(dyn BackendRow + 'a)) -> Result<Self>
     where
         Self: Sized;
+
     /// Create a blank query (matching all rows) for this type.
     fn query() -> Query<Self>;
 }
@@ -89,6 +71,7 @@ pub trait DataResult: Sized {
 pub trait DataObject: DataResult<DBO = Self> + Sync {
     /// The type of the primary key field.
     type PKType: PrimaryKeyType;
+    /// Link to a generated struct providing query helpers for each field.
     type Fields: Default;
     /// The name of the primary key column.
     const PKCOL: &'static str;
@@ -97,13 +80,12 @@ pub trait DataObject: DataResult<DBO = Self> + Sync {
     /// Whether or not this model uses an automatic primary key set on
     /// the first save.
     const AUTO_PK: bool;
+
     /// Get the primary key
     fn pk(&self) -> &Self::PKType;
     /// Find this object in the database based on primary key.
-    async fn get(
-        conn: &impl ConnectionMethods,
-        id: impl Borrow<Self::PKType> + Send + Sync,
-    ) -> Result<Self>
+    /// Returns `Error::NoSuchObject` if the primary key does not exist.
+    async fn get(conn: &impl ConnectionMethods, id: impl ToSql + Send + Sync) -> Result<Self>
     where
         Self: Sized,
         Self::PKType: Sync,
@@ -112,17 +94,14 @@ pub trait DataObject: DataResult<DBO = Self> + Sync {
     }
     /// Find this object in the database based on primary key.
     /// Returns `None` if the primary key does not exist.
-    async fn try_get(
-        conn: &impl ConnectionMethods,
-        id: impl Borrow<Self::PKType> + Send + Sync,
-    ) -> Result<Option<Self>>
+    async fn try_get(conn: &impl ConnectionMethods, id: impl ToSql + Send + Sync) -> Result<Option<Self>>
     where
         Self: Sized,
     {
         Ok(<Self as DataResult>::query()
             .filter(query::BoolExpr::Eq(
                 Self::PKCOL,
-                query::Expr::Val(id.borrow().to_sql()),
+                query::Expr::Val(id.to_sql()),
             ))
             .limit(1)
             .load(conn)
@@ -134,17 +113,13 @@ pub trait DataObject: DataResult<DBO = Self> + Sync {
     /// Save the object to the database.
     async fn save(&mut self, conn: &impl ConnectionMethods) -> Result<()>;
     /// Delete the object from the database.
-    async fn delete(&self, conn: &impl ConnectionMethods) -> Result<()>;
-
-    /// Test if this object has been saved to the database at least once
-    fn is_saved(&self) -> Result<bool>;
-}
-
-pub trait ModelTyped {
-    type Model: DataObject;
+    async fn delete(&self, conn: &impl ConnectionMethods) -> Result<()> {
+        conn.delete(Self::TABLE, Self::PKCOL, self.pk().to_sql()).await
+    }
 }
 
 /// Butane errors.
+#[allow(missing_docs)]
 #[derive(Debug, ThisError)]
 pub enum Error {
     #[error("No such object exists")]
@@ -252,9 +227,10 @@ impl From<crossbeam_channel::RecvError> for Error {
 
 /// Enumeration of the types a database value may take.
 ///
-/// See also [`SqlVal`][crate::SqlVal].
+/// See also [`SqlVal`].
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum SqlType {
+    /// Boolean
     Bool,
     /// 4 bytes
     Int,
@@ -262,12 +238,17 @@ pub enum SqlType {
     BigInt,
     /// 8 byte float
     Real,
+    /// String
     Text,
     #[cfg(feature = "datetime")]
+    /// Timestamp
     Timestamp,
+    /// Blob
     Blob,
     #[cfg(feature = "json")]
+    /// JSON
     Json,
+    /// Custom SQL type
     Custom(SqlTypeCustom),
 }
 impl std::fmt::Display for SqlType {
@@ -298,11 +279,15 @@ pub use log::warn;
 #[cfg(not(feature = "log"))]
 mod btlog {
     // this module is just for grouping -- macro_export puts them in the crate root
+
+    /// Noop for when feature log is not enabled.
     #[macro_export]
     macro_rules! debug {
         (target: $target:expr, $($arg:tt)+) => {};
         ($($arg:tt)+) => {};
     }
+
+    /// Noop for when feature log is not enabled.
     #[macro_export]
     macro_rules! warn {
         (target: $target:expr, $($arg:tt)+) => {};

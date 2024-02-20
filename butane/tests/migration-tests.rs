@@ -4,12 +4,14 @@ use butane::migrations::{
 };
 use butane::{db::Connection, prelude::*, SqlType, SqlVal};
 use butane_core::codegen::{butane_type_with_migrations, model_with_migrations};
+#[cfg(feature = "pg")]
+use butane_test_helper::pg_connection;
+#[cfg(feature = "sqlite")]
+use butane_test_helper::sqlite_connection;
 use proc_macro2::TokenStream;
 use quote::quote;
 use sqlparser::dialect::GenericDialect;
 use sqlparser::parser::Parser as SqlParser;
-
-use butane_test_helper::*;
 
 #[test]
 fn current_migration_basic() {
@@ -101,8 +103,7 @@ fn current_migration_auto_attribute() {
     let tokens = quote! {
         #[derive(PartialEq, Eq, Debug, Clone)]
         struct Foo {
-            #[auto]
-            id: i64,
+            id: AutoPk<i64>,
             bar: String,
         }
     };

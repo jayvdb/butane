@@ -1,5 +1,4 @@
 use butane_core::db::{connect, BackendConnection, Connection, ConnectionSpec};
-
 use butane_test_helper::*;
 
 async fn connection_not_closed(conn: Connection) {
@@ -16,7 +15,7 @@ fn persist_invalid_connection_backend() {
     assert!(result.is_err());
     assert!(matches!(result, Err(butane_core::Error::UnknownBackend(_))));
 
-    let dir = tempdir::TempDir::new("butane_test").unwrap();
+    let dir = tempfile::TempDir::new().unwrap();
     assert!(spec.save(dir.path()).is_ok());
     let loaded_spec = ConnectionSpec::load(dir.path()).unwrap();
     assert_eq!(spec, loaded_spec);
@@ -62,7 +61,7 @@ async fn unreachable_pg_connection() {
 }
 
 async fn debug_connection(conn: Connection) {
-    let backend_name = conn.backend_name().clone();
+    let backend_name = conn.backend_name();
 
     let debug_str = format!("{:?}", conn);
     if backend_name == "pg" {
@@ -76,7 +75,7 @@ testall_no_migrate!(debug_connection);
 #[test]
 fn wont_load_connection_spec_from_missing_path() {
     // prepare an non-existent path
-    let dir = tempdir::TempDir::new("butane_test").unwrap();
+    let dir = tempfile::TempDir::new().unwrap();
     let path = dir.path().to_owned();
     let path = std::path::Path::new(&path);
     assert!(dir.close().is_ok());
@@ -91,7 +90,7 @@ fn wont_load_connection_spec_from_missing_path() {
 #[test]
 fn saves_invalid_connection_spec_to_missing_path() {
     // prepare an non-existent path
-    let dir = tempdir::TempDir::new("butane_test").unwrap();
+    let dir = tempfile::TempDir::new().unwrap();
     let path = dir.path().to_owned();
     let path = std::path::Path::new(&path);
     assert!(dir.close().is_ok());

@@ -1,7 +1,11 @@
+//! Macros for butane
+
 //The quote macro can require a high recursion limit
 #![recursion_limit = "256"]
-
+#![deny(missing_docs)]
 extern crate proc_macro;
+
+use std::path::PathBuf;
 
 use butane_core::migrations::adb::{DeferredSqlType, TypeIdentifier};
 use butane_core::{codegen, make_compile_error, migrations, SqlType};
@@ -9,7 +13,6 @@ use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use proc_macro2::TokenTree;
 use quote::quote;
-use std::path::PathBuf;
 use syn::{Expr, Ident};
 
 mod filter;
@@ -26,13 +29,9 @@ mod filter;
 /// ## Helper Attributes
 /// * `#[table = "NAME"]` used on the struct to specify the name of the table (defaults to struct name)
 /// * `#[pk]` on a field to specify that it is the primary key.
-/// * `#[auto]` on a field indicates that the field's value is
-///    initialized based on serial/auto-increment. Currently supported
-///    only on the primary key and only if the primary key is an integer
-///    type
 /// * `#[unique]` on a field indicates that the field's value must be unique
 ///    (perhaps implemented as the SQL UNIQUE constraint by some backends).
-/// * `[default]` should be used on fields added by later migrations to avoid errors on existing objects.
+/// * `#[default]` should be used on fields added by later migrations to avoid errors on existing objects.
 ///     Unnecessary if the new field is an `Option<>`
 ///
 /// For example
@@ -40,9 +39,8 @@ mod filter;
 /// #[model]
 /// #[table = "posts"]
 /// pub struct Post {
-///   #[auto]
 ///   #[pk] // unnecessary if identifier were named id instead
-///   pub identifier: i32,
+///   pub identifier: AutoPk<i32>,
 ///   pub title: String,
 ///   pub content: String,
 ///   #[default = false]
@@ -80,6 +78,63 @@ pub fn dataresult(args: TokenStream, input: TokenStream) -> TokenStream {
     codegen::dataresult(args.into(), input.into()).into()
 }
 
+/// Macro to construct a [`BoolExpr`] (for use with a [`Query`]) from
+/// an expression with Rust syntax.
+///
+/// Using this macro instead of constructing a `BoolExpr` has two
+/// advantages:
+/// 1. It will generally be more ergonomic
+/// 2. References to nonexistent fields or type mismatches
+///    (e.g. comparing a number to a string) will generate a compilation error
+///
+/// Usage: `filter!(Foo, expr)` where `Foo` is a model type (with the
+/// `#[model]` attribute applied) and `expr` is a Rust-like expression
+/// with a boolean value. `Foo`'s fields may be referred to as if they
+/// were variables.
+///
+/// # Rust values
+/// To refer to values from the surrounding rust function, enclose
+/// them in braces, like `filter!(Foo, bar == {bar})`
+///
+/// # Function-like operations
+/// Filters support some operations for which Rust does not have operators and which are instead
+/// represented syntactically as function calls.
+/// * `like`: parameter is a SQL LIKE expression string, e.g. `title.like("M%").
+/// * `matches`: Parameter is a sub-expression. Use with a
+///   [`ForeignKey`] field to evaluate as true if the referent
+///   matches. For example, to find all posts made in blogs by people
+///   named "Pete" we might say `filter!(Post, `blog.matches(author == "Pete"))`.
+/// * `contains`: Essentially the many-to-many version of `matches`.
+///    Parameter is a sub-expression. Use with a [`Many`]
+///    field to evaluate as true if one of the many referents matches
+///    the given expression. For example, in a blog post model with a field
+///    `tags: Many<Tag>` we could filter to posts with a "cats" with
+///    the following `tags.contains(tag == "cats"). If the expression
+///    is single literal, it is assumed to be used to match the
+///    primary key.
+///
+/// # Examples
+/// ```ignore
+/// # use butane_core::query::BoolExpr;
+/// # use butane_codegen::model;
+/// # use butane_codegen::filter;
+/// #[model]
+/// struct Contestant {
+///   #[pk]
+///   name: String,
+///   rank: i32,
+///   nationality: String
+/// }
+/// let e: BoolExpr = filter!(Contestant, nationality == "US" && rank < 42);
+/// let first_place = 1;
+/// let e2 = filter!(Contestant, rank == { first_place });
+/// let e3 = filter!(Contestant, name.like("A%"));
+/// ```
+///
+/// [`BoolExpr`]: butane_core::query::BoolExpr
+/// [`ForeignKey`]: butane_core::fkey::ForeignKey
+/// [`Many`]: butane_core::many::Many
+/// [`Query`]: butane_core::query::Query
 #[proc_macro]
 pub fn filter(input: TokenStream) -> TokenStream {
     let input: TokenStream2 = input.into();
@@ -169,6 +224,17 @@ fn migrations_dir() -> PathBuf {
     dir
 }
 
+/// Derive macro for `FieldType`.
+/// Produces a String field for simple enums, otherwise uses a JSON field if json feature is enabled.
+/// E.g.
+/// ```ignore
+/// #[derive(FieldType)]
+/// pub enum Currency {
+///   Dollars,
+///   Pounds,
+///   Euros,
+/// }
+/// ```
 #[proc_macro_derive(FieldType)]
 pub fn derive_field_type(input: TokenStream) -> TokenStream {
     let derive_input = syn::parse_macro_input!(input as syn::DeriveInput);
@@ -204,7 +270,7 @@ fn derive_field_type_for_enum(ident: &Ident, data_enum: syn::DataEnum) -> TokenS
         .iter()
         .map(|variant| {
             let v_ident = &variant.ident;
-            let ident_literal = codegen::make_lit(&v_ident.to_string());
+            let ident_literal = codegen::make_ident_literal_str(v_ident);
             quote!(Self::#v_ident => #ident_literal,)
         })
         .collect();
@@ -213,7 +279,7 @@ fn derive_field_type_for_enum(ident: &Ident, data_enum: syn::DataEnum) -> TokenS
         .iter()
         .map(|variant| {
             let v_ident = &variant.ident;
-            let ident_literal = codegen::make_lit(&v_ident.to_string());
+            let ident_literal = codegen::make_ident_literal_str(v_ident);
             quote!(#ident_literal => Ok(Self::#v_ident),)
         })
         .collect();

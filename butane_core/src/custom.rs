@@ -5,11 +5,13 @@
 //! source repository. Not supported for the Sqlite backend as Sqlite
 //! supports a very limited set of types to begin with.
 
-use serde::{Deserialize, Serialize};
+#![allow(missing_docs)]
+
 use std::fmt;
 
 #[cfg(feature = "pg")]
 use tokio_postgres as postgres;
+use serde::{Deserialize, Serialize};
 
 /// For use with [SqlType::Custom](crate::SqlType)
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

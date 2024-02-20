@@ -1,12 +1,16 @@
-use crate::db::Column;
-use crate::query::{BoolExpr, Expr};
-use crate::{DataObject, Error, FieldType, Result, SqlType, SqlVal, ToSql};
-use serde::{Deserialize, Serialize};
+//! Implementation of many-to-many relationships between models.
+#![deny(missing_docs)]
 use std::borrow::Cow;
+
 use tokio::sync::OnceCell;
 
 #[cfg(feature = "fake")]
 use fake::{Dummy, Faker};
+use serde::{Deserialize, Serialize};
+
+use crate::db::{Column, ConnectionMethods};
+use crate::query::{BoolExpr, Expr, OrderDirection, Query};
+use crate::{DataObject, Error, FieldType, PrimaryKeyType, Result, SqlType, SqlVal, ToSql};
 
 fn default_oc<T>() -> OnceCell<Vec<T>> {
     // Same as impl Default for once_cell::unsync::OnceCell
@@ -73,11 +77,8 @@ where
     /// to have an uninitialized one.
     pub fn add(&mut self, new_val: &T) -> Result<()> {
         // Check for uninitialized pk
-        match new_val.is_saved() {
-            Ok(true) => (), // hooray
-            Ok(false) => return Err(Error::ValueNotSaved),
-            Err(Error::SaveDeterminationNotSupported) => (), // we don't know, so assume it's OK
-            Err(e) => return Err(e),                         // unexpected error
+        if !new_val.pk().is_valid() {
+            return Err(Error::ValueNotSaved);
         }
 
         // all_values is now out of date, so clear it
@@ -127,44 +128,90 @@ where
         Ok(())
     }
 
-    /// Loads the values referred to by this foreign key from the
+    /// Delete all references from the database, and any unsaved additions.
+    pub async fn delete(&mut self, conn: &impl ConnectionMethods) -> Result<()> {
+        let owner = self.owner.as_ref().ok_or(Error::NotInitialized)?;
+        conn.delete_where(
+            &self.item_table,
+            BoolExpr::Eq("owner", Expr::Val(owner.clone())),
+        ).await?;
+        self.new_values.clear();
+        self.removed_values.clear();
+        // all_values is now out of date, so clear it
+        self.all_values = OnceCell::new();
+        Ok(())
+    }
+
+    /// Loads the values referred to by this many relationship from the
     /// database if necessary and returns a reference to them.
-    pub async fn load(
+    pub async fn load(&self, conn: &impl ConnectionMethods) -> Result<impl Iterator<Item = &T>> {
+        let query = self.query();
+        // If not initialised then there are no values
+        let vals: Result<Vec<&T>> = if query.is_err() {
+            Ok(Vec::new())
+        } else {
+            Ok(self.load_query(conn, query.unwrap()).await?.collect())
+        };
+        vals.map(|v| v.into_iter())
+    }
+
+    /// Query the values referred to by this many relationship from the
+    /// database if necessary and returns a reference to them.
+    fn query(&self) -> Result<Query<T>> {
+        let owner: &SqlVal = match &self.owner {
+            Some(o) => o,
+            None => return Err(Error::NotInitialized),
+        };
+        Ok(T::query().filter(BoolExpr::Subquery {
+            col: T::PKCOL,
+            tbl2: self.item_table.clone(),
+            tbl2_col: "has",
+            expr: Box::new(BoolExpr::Eq("owner", Expr::Val(owner.clone()))),
+        }))
+    }
+
+    /// Loads the values referred to by this many relationship from a
+    /// database query if necessary and returns a reference to them.
+    async fn load_query(
         &self,
-        conn: &impl crate::ConnectionMethods,
+        conn: &impl ConnectionMethods,
+        query: Query<T>,
     ) -> Result<impl Iterator<Item = &T>> {
-        let vals: Result<&Vec<T>> = self
-            .all_values
-            .get_or_try_init(|| async {
-                //if we don't have an owner then there are no values
-                let owner: &SqlVal = match &self.owner {
-                    Some(o) => o,
-                    None => return Ok(Vec::new()),
-                };
-                let mut vals = T::query()
-                    .filter(BoolExpr::Subquery {
-                        col: T::PKCOL,
-                        tbl2: self.item_table.clone(),
-                        tbl2_col: "has",
-                        expr: Box::new(BoolExpr::Eq("owner", Expr::Val(owner.clone()))),
-                    })
-                    .load(conn)
-                    .await?;
-                // Now add in the values for things not saved to the db yet
-                if !self.new_values.is_empty() {
-                    vals.append(
-                        &mut T::query()
-                            .filter(BoolExpr::In(T::PKCOL, self.new_values.clone()))
-                            .load(conn)
-                            .await?,
-                    );
-                }
-                Ok(vals)
-            })
-            .await;
+        let vals: Result<&Vec<T>> = self.all_values.get_or_try_init(|| async {
+            let mut vals = query.load(conn).await?;
+            // Now add in the values for things not saved to the db yet
+            if !self.new_values.is_empty() {
+                vals.append(
+                    &mut T::query()
+                        .filter(BoolExpr::In(T::PKCOL, self.new_values.clone()))
+                        .load(conn).await?,
+                );
+            }
+            Ok(vals)
+        }).await;
         vals.map(|v| v.iter())
     }
 
+    /// Loads and orders the values referred to by this many relationship from a
+    /// database if necessary and returns a reference to them.
+    pub async fn load_ordered(
+        &self,
+        conn: &impl ConnectionMethods,
+        order: OrderDirection,
+    ) -> Result<impl Iterator<Item = &T>> {
+        let query = self.query();
+        // If not initialised then there are no values
+        let vals: Result<Vec<&T>> = if query.is_err() {
+            Ok(Vec::new())
+        } else {
+            Ok(self
+                .load_query(conn, query.unwrap().order(T::PKCOL, order)).await?
+                .collect())
+        };
+        vals.map(|v| v.into_iter())
+    }
+
+    /// Describes the columns of the Many table
     pub fn columns(&self) -> [Column; 2] {
         [
             Column::new("owner", self.owner_type.clone()),

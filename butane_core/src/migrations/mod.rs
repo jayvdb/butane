@@ -1,12 +1,16 @@
 //! For working with migrations. If using the butane CLI tool, it is
 //! not necessary to use these types directly.
+
+#![allow(missing_docs)]
+
+use std::path::Path;
+
+use fallible_iterator::FallibleIterator;
+
 use crate::db::BackendRows;
 use crate::db::{Column, ConnectionMethods};
 use crate::sqlval::{FromSql, SqlValRef, ToSql};
 use crate::{db, query, DataObject, DataResult, Error, Result, SqlType};
-
-use fallible_iterator::FallibleIterator;
-use std::path::Path;
 
 pub mod adb;
 use adb::{AColumn, ATable, DeferredSqlType, Operation, TypeIdentifier, ADB};
@@ -206,7 +210,8 @@ fn migrations_table() -> ATable {
         true,  // pk
         false, // auto
         false, // unique
-        None,
+        None,  // default
+        None,  // references
     );
     table.add_column(col);
     table
@@ -288,10 +293,5 @@ impl DataObject for ButaneMigration {
     async fn delete(&self, conn: &impl ConnectionMethods) -> Result<()> {
         conn.delete(Self::TABLE, Self::PKCOL, self.pk().to_sql())
             .await
-    }
-    fn is_saved(&self) -> Result<bool> {
-        // In practice we don't expect this to be called as
-        // ButaneMigration is not exposed outside the library
-        Err(Error::SaveDeterminationNotSupported)
     }
 }

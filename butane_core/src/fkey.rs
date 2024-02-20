@@ -1,11 +1,17 @@
-use crate::*;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+//! Implementation of foreign key relationships between models.
+#![deny(missing_docs)]
 use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
+
 use tokio::sync::OnceCell;
 
 #[cfg(feature = "fake")]
 use fake::{Dummy, Faker};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+use crate::{
+    AsPrimaryKey, DataObject, Error, FieldType, FromSql, Result, SqlType, SqlVal, SqlValRef, ToSql,
+};
 
 /// Used to implement a relationship between models.
 ///
@@ -32,6 +38,7 @@ where
     valpk: OnceCell<SqlVal>,
 }
 impl<T: DataObject> ForeignKey<T> {
+    /// Create a value from a reference to the primary key of the value
     pub fn from_pk(pk: T::PKType) -> Self {
         let ret = Self::new_raw();
         ret.valpk.set(pk.into_sql()).unwrap();

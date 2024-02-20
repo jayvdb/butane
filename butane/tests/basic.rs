@@ -1,15 +1,16 @@
+#![allow(clippy::disallowed_names)]
+
 use butane::db::Connection;
-use butane::{butane_type, find, model, query};
+use butane::{butane_type, find, model, query, AutoPk, ForeignKey};
 use butane::{colname, prelude::*};
-use butane::{ForeignKey, ObjectState};
+use butane_test_helper::*;
+#[cfg(feature = "datetime")]
 use chrono::{naive::NaiveDateTime, offset::Utc, DateTime};
 #[cfg(feature = "sqlite")]
 use rusqlite;
 use serde::Serialize;
 #[cfg(feature = "pg")]
 use tokio_postgres as postgres;
-
-use butane_test_helper::*;
 
 #[butane_type]
 pub type Whatsit = String;
@@ -33,7 +34,6 @@ impl Foo {
             bar: 0,
             baz: String::new(),
             blobbity: Vec::new(),
-            state: ObjectState::default(),
         }
     }
 }
@@ -50,23 +50,20 @@ impl Bar {
         Bar {
             name: name.to_string(),
             foo: foo.into(),
-            state: ObjectState::default(),
         }
     }
 }
 
 #[model]
 struct Baz {
-    #[auto]
-    id: i64,
+    id: AutoPk<i64>,
     text: String,
 }
 impl Baz {
     fn new(text: &str) -> Self {
         Baz {
-            id: -1, // will be set automatically when saved
+            id: AutoPk::default(),
             text: text.to_string(),
-            state: ObjectState::default(),
         }
     }
 }
@@ -77,11 +74,14 @@ struct HasOnlyPk {
 }
 impl HasOnlyPk {
     fn new(id: i64) -> Self {
-        HasOnlyPk {
-            id,
-            state: ObjectState::default(),
-        }
+        HasOnlyPk { id }
     }
+}
+
+#[model]
+#[derive(Default)]
+struct HasOnlyAutoPk {
+    id: AutoPk<i64>,
 }
 
 #[model]
@@ -95,11 +95,11 @@ impl SelfReferential {
         SelfReferential {
             id,
             reference: None,
-            state: ObjectState::default(),
         }
     }
 }
 
+#[cfg(feature = "datetime")]
 #[model]
 #[derive(Debug, Default, PartialEq, Clone)]
 struct TimeHolder {
@@ -251,14 +251,29 @@ testall!(auto_pk);
 async fn only_pk(conn: Connection) {
     let mut obj = HasOnlyPk::new(1);
     obj.save(&conn).await.unwrap();
+    assert_eq!(obj.id, 1);
     // verify we can still save the object even though it has no
     // fields to modify
     obj.save(&conn).await.unwrap();
+    // verify it didnt get a new id
+    assert_eq!(obj.id, 1);
 }
 testall!(only_pk);
 
+async fn only_auto_pk(conn: Connection) {
+    let mut obj = HasOnlyAutoPk::default();
+    obj.save(&conn).await.unwrap();
+    let pk = obj.id;
+    // verify we can still save the object even though it has no
+    // fields to modify
+    obj.save(&conn).await.unwrap();
+    // verify it didnt get a new id
+    assert_eq!(obj.id, pk);
+}
+testall!(only_auto_pk);
+
 async fn basic_committed_transaction(mut conn: Connection) {
-    let tr = conn.transaction().await.unwrap();
+    let tr = conn.transaction().unwrap();
 
     // Create an object with a transaction and commit it
     let mut foo = Foo::new(1);
@@ -347,6 +362,14 @@ async fn fkey_same_type(conn: Connection) {
 }
 testall!(fkey_same_type);
 
+async fn cant_save_unsaved_fkey(conn: Connection) {
+    let foo = Foo::new(1);
+    let mut bar = Bar::new("tarzan", foo);
+    assert!(bar.save(&conn).is_err());
+}
+testall!(cant_save_unsaved_fkey);
+
+#[cfg(feature = "datetime")]
 async fn basic_time(conn: Connection) {
     let now = Utc::now();
     let mut time = TimeHolder {
@@ -354,7 +377,6 @@ async fn basic_time(conn: Connection) {
         naive: now.naive_utc(),
         utc: now,
         when: now,
-        state: ObjectState::default(),
     };
     time.save(&conn).await.unwrap();
 
@@ -363,6 +385,7 @@ async fn basic_time(conn: Connection) {
     // lose some precision when we go to the database.
     assert_eq!(time.naive.timestamp(), time2.naive.timestamp());
 }
+#[cfg(feature = "datetime")]
 testall!(basic_time);
 
 async fn basic_load_first(conn: Connection) {

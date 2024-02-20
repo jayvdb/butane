@@ -1,3 +1,11 @@
+//! An experimental ORM for Rust with a focus on simplicity and on writing Rust, not SQL
+
+//! Butane takes an object-oriented approach to database operations.
+//! It may be thought of as much as an object-persistence system as an ORM.
+//! The fact that it is backed by a SQL database is mostly an implementation detail to the API consumer.
+
+#![deny(missing_docs)]
+
 pub use butane_codegen::{butane_type, dataresult, model, FieldType};
 pub use butane_core::custom;
 pub use butane_core::fkey::ForeignKey;
@@ -5,11 +13,12 @@ pub use butane_core::many::Many;
 pub use butane_core::migrations;
 pub use butane_core::query;
 pub use butane_core::{
-    AsPrimaryKey, DataObject, DataResult, Error, FieldType, FromSql, ObjectState, PrimaryKeyType,
+    AsPrimaryKey, AutoPk, DataObject, DataResult, Error, FieldType, FromSql, PrimaryKeyType,
     Result, SqlType, SqlVal, SqlValRef, ToSql,
 };
 
 pub mod db {
+    //! Database helpers
     pub use butane_core::db::*;
 }
 
@@ -60,6 +69,7 @@ pub mod db {
 ///   rank: i32,
 ///   nationality: String
 /// }
+<<<<<<< HEAD
 /// # tokio_test::block_on(async {
 ///   let e: BoolExpr = filter!(Contestant, nationality == "US" && rank < 42);
 ///   let first_place = 1;
@@ -67,6 +77,13 @@ pub mod db {
 ///   let e3 = filter!(Contestant, name.like("A%"));
 /// # })
 ///```
+=======
+/// let e: BoolExpr = filter!(Contestant, nationality == "US" && rank < 42);
+/// let first_place = 1;
+/// let e2 = filter!(Contestant, rank == { first_place });
+/// let e3 = filter!(Contestant, name.like("A%"));
+/// ```
+>>>>>>> master
 ///
 /// [`BoolExpr`]: crate::query::BoolExpr
 /// [`Query`]: crate::query::Query
@@ -92,7 +109,7 @@ pub use butane_codegen::filter;
 ///   nationality: String
 /// }
 /// let top_tier: Query<Contestant> = query!(Contestant, rank <= 10);
-///```
+/// ```
 ///
 /// [`filter]: crate::filter
 /// [`Query`]: crate::query::Query
@@ -145,8 +162,12 @@ macro_rules! colname {
 /// # tokio_test::block_on(async {
 /// let conn = butane::db::connect(&ConnectionSpec::new("sqlite", "foo.db")).await.unwrap();
 /// let alice: Result<Contestant, butane::Error> = find!(Contestant, name == "Alice", &conn);
+<<<<<<< HEAD
 /// # })
 ///```
+=======
+/// ```
+>>>>>>> master
 ///
 /// [`filter]: crate::filter
 /// [`Result`]: crate::Result
@@ -168,11 +189,12 @@ pub mod prelude {
     //! Its use is recommended, but not required. If not used, the use
     //! of butane's macros may require some of its re-exports to be
     //! used manually.
+    pub use butane_core::db::BackendConnection;
+
     #[doc(no_inline)]
     pub use crate::DataObject;
     #[doc(no_inline)]
     pub use crate::DataResult;
-    pub use butane_core::db::BackendConnection;
 }
 
 pub mod internal {
