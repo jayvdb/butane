@@ -9,6 +9,8 @@ use r2d2_for_test as r2d2;
 #[cfg(feature = "r2d2")]
 use std::ops::DerefMut;
 
+use std::ops::Deref;
+
 #[cfg(all(feature = "sqlite", feature = "r2d2"))]
 #[test]
 fn r2d2_sqlite() {
@@ -19,10 +21,11 @@ fn r2d2_sqlite() {
         let mut conn1 = pool.get().unwrap();
         assert_eq!(pool.state().connections, 3);
         assert_eq!(pool.state().idle_connections, 2);
-        let conn_async = butane::db::adapt_connection(conn1.deref_mut());
+        let mut conn_async = butane::db::adapt_connection(*conn1.deref()).unwrap();
+        let backend = butane_core::db::get_backend("sqlite").unwrap();
         setup_db(
-            Box::new(butane::db::sqlite::SQLiteBackend::new().into()),
-            conn_async,
+            backend,
+            &mut conn_async,
             true,
         );
 
@@ -33,17 +36,18 @@ fn r2d2_sqlite() {
 }
 
 #[cfg(all(feature = "pg", feature = "r2d2"))]
-#[test]
-fn r2d2_pq() {
-    let (connspec, _data) = pg_connspec();
+#[tokio::test]
+async fn r2d2_pq() {
+    let (connspec, _data) = pg_connspec().await;
     let manager = db::ConnectionManager::new(connspec);
     let pool = r2d2::Pool::builder().max_size(3).build(manager).unwrap();
 
     {
-        let mut conn1 = pool.get().unwrap();
+        let conn1 = pool.get().unwrap();
         assert_eq!(pool.state().connections, 3);
         assert_eq!(pool.state().idle_connections, 2);
-        setup_db(Box::new(butane::db::pg::PgBackend::new()), &mut conn1, true);
+        let mut conn_async = butane::db::adapt_connection(*conn1.deref()).unwrap();
+        setup_db(Box::new(butane::db::pg::PgBackend::new()), &mut conn_async, true);
 
         let _conn2 = pool.get().unwrap();
         assert_eq!(pool.state().idle_connections, 1);

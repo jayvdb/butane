@@ -24,6 +24,7 @@ use fake::{Dummy, Faker};
 
 use db::{BackendRow, Column, ConnectionMethods};
 mod sync {
+    #[allow(unused_imports)]
     pub use crate::db::sync::ConnectionMethods;
 }
 
