@@ -43,7 +43,6 @@ geo-types = "0.7"
 log_for_test = { package = "log", version = "0.4" }
 quote = { workspace = true }
 proc-macro2 = { workspace = true }
-once_cell = { workspace = true }
 tokio = {workspace = true, features = ["macros"]}
 tokio-postgres = { features = ["with-geo-types-0_7"], workspace = true }
 tokio-test = { workspace = true }

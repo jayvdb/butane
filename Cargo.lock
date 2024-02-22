@@ -262,7 +262,6 @@ dependencies = [
  "fake",
  "geo-types",
  "log",
- "once_cell",
  "paste",
  "proc-macro2 1.0.78",
  "quote 1.0.35",
