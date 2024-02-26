@@ -193,9 +193,10 @@ pub fn rollback_to(base_dir: &Path, mut conn: Connection, to: &str) -> Result<()
     }
 
     if *to_unapply.last().unwrap() != latest {
-        let index = to_unapply.iter().position(|m| {
-            m.name() == latest.name()
-        }).unwrap();
+        let index = to_unapply
+            .iter()
+            .position(|m| m.name() == latest.name())
+            .unwrap();
         to_unapply = to_unapply.split_at(index + 1).0.into();
     }
 
