@@ -9,6 +9,7 @@
 pub use butane_codegen::{butane_type, dataresult, model, FieldType};
 pub use butane_core::custom;
 pub use butane_core::fkey::ForeignKey;
+pub use butane_core::internal;
 pub use butane_core::many::Many;
 pub use butane_core::migrations;
 pub use butane_core::query;
@@ -184,7 +185,7 @@ pub mod prelude {
     #[doc(no_inline)]
     pub use crate::DataResult;
 }
-
+/*
 pub mod internal {
     //! Internals which will we be used in macro-generated code.
     //!
@@ -192,3 +193,4 @@ pub mod internal {
 
     pub use async_trait::async_trait;
 }
+*/

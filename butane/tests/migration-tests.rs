@@ -186,7 +186,9 @@ async fn migration_add_field_sqlite() {
         // getting sane looking downgrade sql and a test failure if it
         // changes. If the change is innocuous, this test should just
         // be updated.
-        "CREATE TABLE Foo__butane_tmp (id INTEGER NOT NULL PRIMARY KEY,bar TEXT NOT NULL);INSERT INTO Foo__butane_tmp SELECT id, bar FROM Foo;DROP TABLE Foo;ALTER TABLE Foo__butane_tmp RENAME TO Foo;",
+        "CREATE TABLE Foo__butane_tmp (id INTEGER NOT NULL PRIMARY KEY,bar TEXT NOT NULL);
+INSERT INTO Foo__butane_tmp SELECT id, bar FROM Foo;DROP TABLE Foo;
+ALTER TABLE Foo__butane_tmp RENAME TO Foo;",
     ).await;
 }
 
@@ -295,12 +297,13 @@ async fn test_migrate(
 ) {
     let mut ms = MemMigrations::new();
     let backend = conn.backend();
+    let backends = nonempty::nonempty![backend];
     model_with_migrations(init_tokens, &mut ms);
-    assert!(ms.create_migration(&backend, "init", None).unwrap());
+    assert!(ms.create_migration(&backends, "init", None).unwrap());
 
     model_with_migrations(v2_tokens, &mut ms);
     assert!(ms
-        .create_migration(&backend, "v2", ms.latest().as_ref())
+        .create_migration(&backends, "v2", ms.latest().as_ref())
         .unwrap());
 
     let mut to_apply = ms.unapplied_migrations(conn).await.unwrap();
@@ -406,12 +409,13 @@ async fn migration_delete_table(
 
     let mut ms = MemMigrations::new();
     let backend = conn.backend();
+    let backends = nonempty::nonempty![backend];
     model_with_migrations(init_tokens, &mut ms);
-    assert!(ms.create_migration(&backend, "init", None).unwrap());
+    assert!(ms.create_migration(&backends, "init", None).unwrap());
 
     ms.current().delete_table("Foo").unwrap();
     assert!(ms
-        .create_migration(&backend, "v2", ms.latest().as_ref())
+        .create_migration(&backends, "v2", ms.latest().as_ref())
         .unwrap());
 
     let mut to_apply = ms.unapplied_migrations(conn).await.unwrap();

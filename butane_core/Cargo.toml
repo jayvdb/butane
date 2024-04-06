@@ -5,9 +5,8 @@ authors = ["James Oakley <james@electronstudio.org>"]
 edition.workspace = true
 description = "Internals for Butane. Do not use this crate directly -- use the butane crate."
 readme = "../README.md"
-license = "MIT OR Apache-2.0"
-repository = "https://github.com/Electron100/butane"
-
+license.workspace = true
+repository.workspace = true
 
 [features]
 async-adapter = []
@@ -39,6 +38,7 @@ hex = "0.4"
 log = { optional = true, workspace = true }
 maybe-async-cfg = { workspace = true }
 native-tls = { version = "0.2", optional = true }
+nonempty.workspace = true
 once_cell = { workspace = true }
 pin-project = "1"
 tokio = {workspace = true, features = ["rt", "sync", "rt-multi-thread"]}
@@ -46,7 +46,7 @@ tokio-postgres = { optional = true, workspace = true }
 postgres-native-tls = { version = "0.5", optional = true }
 proc-macro2 = { workspace = true }
 quote = { workspace = true }
-r2d2 = { optional = true, workspace = true }
+# r2d2 = { optional = true, workspace = true }
 rand = { optional = true, workspace = true }
 regex = { version = "1.5", features = ["std"] }
 rusqlite = { workspace = true, optional = true }
@@ -58,12 +58,13 @@ thiserror = "1.0"
 uuid = { workspace = true, optional = true }
 
 [dev-dependencies]
+butane_core = { workspace = true, features = ["log"] }
 assert_matches = "1.5"
 butane_test_helper = { workspace = true }
 env_logger = { workspace = true }
 paste = { workspace = true }
-tempfile = "3.7"
-tokio = {workspace = true, features = ["macros"]}
+tempfile.workspace = true
+tokio = {workspace = true, features = ["macros"] }
 
 [[test]]
 name = "uuid"
