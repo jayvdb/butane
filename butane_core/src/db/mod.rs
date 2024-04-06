@@ -385,6 +385,7 @@ pub fn connect_sync(spec: &ConnectionSpec) -> Result<sync::Connection> {
         .connect(&spec.conn_str)
 }
 
+/* This is broken
 #[cfg(all(feature = "sqlite", feature = "r2d2"))]
 pub fn adapt_connection(conn: &sync::Connection) -> Result<Connection> {
     let connmethods_async = adapter::AsyncAdapter::new(|| Ok(conn))?;
@@ -392,3 +393,4 @@ pub fn adapt_connection(conn: &sync::Connection) -> Result<Connection> {
         conn: Box::new(connmethods_async),
     })
 }
+*/
