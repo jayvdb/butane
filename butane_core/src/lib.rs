@@ -66,12 +66,12 @@ pub mod internal {
         /// Like [DataResult::COLUMNS] but omits [AutoPk].
         const NON_AUTO_COLUMNS: &'static [Column];
 
-        /// Get the primary key as mutable. Used internally in the case of [AutoPk].
-        fn pk_mut(&mut self) -> &mut impl PrimaryKeyType;
+        // Get the primary key as mutable. Used internally in the case of [AutoPk].
+        //fn pk_mut(&self) -> &mut impl PrimaryKeyType;
 
         /// Saves many-to-many relationships pointed to by fields on this model.
         /// Performed automatically by `save`. You do not need to call this directly.
-        fn save_many_to_many(&mut self, conn: &impl ConnectionMethods) -> Result<()>;
+        fn save_many_to_many(&self, conn: &impl ConnectionMethods) -> Result<()>;
 
         /// Returns the Sql values of all columns. Used internally. You are
         /// unlikely to need to call this directly.
@@ -124,9 +124,10 @@ pub trait DataObject: DataResult<DBO = Self> + internal::DataObjectInternal {
             .nth(0))
     }
     /// Save the object to the database.
-    fn save(&mut self, conn: &impl ConnectionMethods) -> Result<()> {
+    fn save(&self, conn: &impl ConnectionMethods) -> Result<()> {
         let pkcol = Column::new(Self::PKCOL, <Self::PKType as FieldType>::SQLTYPE);
 
+        /*
         if Self::AUTO_PK && <Self as DataResult>::COLUMNS.len() == 1 {
             // Our only field is an AutoPk
             if !self.pk().is_valid() {
@@ -164,6 +165,8 @@ pub trait DataObject: DataResult<DBO = Self> + internal::DataObjectInternal {
             // No AutoPk to worry about, do an upsert
             conn.insert_or_replace(Self::TABLE, Self::COLUMNS, &pkcol, &self.values(true))?;
         }
+         */
+        conn.insert_or_replace(Self::TABLE, Self::COLUMNS, &pkcol, &self.values(true))?;
 
         self.save_many_to_many(conn)?;
 

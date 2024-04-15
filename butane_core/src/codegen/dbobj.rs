@@ -68,10 +68,10 @@ pub fn impl_dbobject(ast_struct: &ItemStruct, config: &Config) -> TokenStream2 {
                 #insert_cols
             ];
 
-            fn pk_mut(&mut self) -> &mut impl butane::PrimaryKeyType {
+            /*fn pk_mut(&mut self) -> &mut impl butane::PrimaryKeyType {
                 &mut self.#pkident
-            }
-            fn save_many_to_many(&mut self, conn: &impl butane::db::ConnectionMethods) -> butane::Result<()> {
+            }*/
+            fn save_many_to_many(&self, conn: &impl butane::db::ConnectionMethods) -> butane::Result<()> {
                 #many_save
                 Ok(())
             }

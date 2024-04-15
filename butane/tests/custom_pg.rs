@@ -4,7 +4,7 @@ mod custom_pg {
     use butane::custom::{SqlTypeCustom, SqlValRefCustom};
     use butane::prelude::*;
     use butane::{butane_type, db::Connection, model};
-    use butane::{AutoPk, FieldType, FromSql, SqlType, SqlVal, SqlValRef, ToSql};
+    use butane::{FieldType, FromSql, SqlType, SqlVal, SqlValRef, ToSql};
     use butane_test_helper::{maketest, maketest_pg};
 
     // newtype so we can implement traits for it.
@@ -51,14 +51,14 @@ mod custom_pg {
     #[model]
     #[derive(Debug, PartialEq)]
     struct Trip {
-        id: AutoPk<i64>,
+        id: i64,
         pt_from: Point,
         pt_to: Point,
     }
 
     fn roundtrip_custom(conn: Connection) {
         let mut trip = Trip {
-            id: AutoPk::uninitialized(),
+            id: 1,
             pt_from: Point::new(0.0, 0.0),
             pt_to: Point::new(8.0, 9.0),
         };
