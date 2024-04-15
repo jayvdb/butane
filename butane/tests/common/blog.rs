@@ -1,4 +1,3 @@
-use butane::prelude::*;
 use butane::{dataresult, model};
 use butane::{db::Connection, ForeignKey, Many};
 #[cfg(feature = "datetime")]
