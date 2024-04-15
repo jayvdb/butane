@@ -1,7 +1,7 @@
 #![allow(clippy::disallowed_names)]
 
 use butane::db::Connection;
-use butane::{butane_type, find, model, query, AutoPk, ForeignKey};
+use butane::{butane_type, find, model, query, AutoPk, ForeignKey, Result};
 use butane::{colname, prelude::*};
 use butane_test_helper::*;
 #[cfg(feature = "datetime")]
@@ -42,11 +42,13 @@ struct Bar {
     foo: ForeignKey<Foo>,
 }
 impl Bar {
-    fn new(name: &str, foo: Foo) -> Self {
-        Bar {
+    fn new(name: &str, foo: Foo) -> Result<Self> {
+        // this doesnt fail because Foo.pk() is of type i64., which has a blanket .is_valid() == true;
+        // we need a NonAutoPk so we can base `is_valid` around whether it was fetched from the DB.
+        Ok(Bar {
             name: name.to_string(),
-            foo: foo.into(),
-        }
+            foo: ForeignKey::<Foo>::from_pk(*foo.pk())?,
+        })
     }
 }
 
@@ -203,7 +205,7 @@ testall!(basic_query_delete);
 fn string_pk(conn: Connection) {
     let mut foo = Foo::new(1);
     foo.save(&conn).unwrap();
-    let mut bar = Bar::new("tarzan", foo);
+    let mut bar = Bar::new("tarzan", foo).unwrap();
     bar.save(&conn).unwrap();
 
     let bar2 = Bar::get(&conn, "tarzan".to_string()).unwrap();
@@ -214,7 +216,7 @@ testall!(string_pk);
 fn foreign_key(conn: Connection) {
     let mut foo = Foo::new(1);
     foo.save(&conn).unwrap();
-    let mut bar = Bar::new("tarzan", foo.clone());
+    let mut bar = Bar::new("tarzan", foo.clone()).unwrap();
     bar.save(&conn).unwrap();
     let bar2 = Bar::get(&conn, "tarzan".to_string()).unwrap();
 
@@ -341,7 +343,7 @@ fn fkey_same_type(conn: Connection) {
     let mut o1 = SelfReferential::new(1);
     let mut o2 = SelfReferential::new(2);
     o2.save(&conn).unwrap();
-    o1.reference = Some(ForeignKey::from_pk(o2.id));
+    o1.reference = Some(ForeignKey::from_pk(o2.id).unwrap());
     o1.save(&conn).unwrap();
 
     let o1 = SelfReferential::get(&conn, 1).unwrap();
@@ -352,11 +354,12 @@ fn fkey_same_type(conn: Connection) {
 }
 testall!(fkey_same_type);
 
-fn cant_create_unsaved_fkey(conn: Connection) {
+#[test]
+fn cant_create_unsaved_fkey() {
     let foo = Foo::new(1);
-    Bar::new("tarzan", foo).is_err();
+    eprintln!("{:?}", Bar::new("tarzan", foo.clone()));
+    assert!(Bar::new("tarzan", foo).is_err());
 }
-testall!(cant_create_unsaved_fkey);
 
 #[cfg(feature = "datetime")]
 fn basic_time(conn: Connection) {

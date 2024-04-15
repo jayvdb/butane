@@ -11,6 +11,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use crate::db::ConnectionMethods;
 use crate::{
     AsPrimaryKey, DataObject, Error, FieldType, FromSql, Result, SqlType, SqlVal, SqlValRef, ToSql,
+    PrimaryKeyType
 };
 
 /// Used to implement a relationship between models.
@@ -39,8 +40,8 @@ where
 }
 impl<T: DataObject> ForeignKey<T> {
     /// Create a value from a reference to the primary key of the value
-    pub fn from_pk(pk: T::PKType) -> Result<Self> {
-        if !pk().is_valid() {
+    pub fn from_obj(pk: T::PKType) -> Result<Self> {
+        if !pk.is_valid() {
             return Err(Error::ValueNotSaved);
         }
         let ret = Self::new_raw();
@@ -107,6 +108,7 @@ impl<T: DataObject> From<T> for ForeignKey<T> {
  */
 
 //pub struct InputWrapper<T>(T);
+/*
 impl<T: DataObject> TryFrom<&T> for ForeignKey<T> {
     type Error = &'static str;
 
@@ -114,6 +116,7 @@ impl<T: DataObject> TryFrom<&T> for ForeignKey<T> {
         Ok(Self::from_pk(obj.pk().clone()))
     }
 }
+ */
 impl<T: DataObject> Clone for ForeignKey<T> {
     fn clone(&self) -> Self {
         // Once specialization lands, it would be nice to clone val if
@@ -213,7 +216,8 @@ where
     where
         D: Deserializer<'de>,
     {
-        Self::from_pk(T::PKType::deserialize(deserializer)?)
+        use serde::de::Error;
+        Ok(Self::from_pk(T::PKType::deserialize(deserializer)?).map_err(D::Error::custom)?)
     }
 }
 

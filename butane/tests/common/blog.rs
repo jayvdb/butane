@@ -62,7 +62,7 @@ impl Post {
             pub_time: None,
             likes: 0,
             tags: Many::new(),
-            blog: ForeignKey::from(blog),
+            blog: ForeignKey::from_pk(*blog.pk()).unwrap(),
         }
     }
 }
