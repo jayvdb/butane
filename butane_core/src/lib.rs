@@ -71,7 +71,7 @@ pub mod internal {
 
         /// Saves many-to-many relationships pointed to by fields on this model.
         /// Performed automatically by `save`. You do not need to call this directly.
-        fn save_many_to_many(&mut self, conn: &impl ConnectionMethods) -> Result<()>;
+        fn save_many_to_many(& self, conn: &impl ConnectionMethods) -> Result<()>;
 
         /// Returns the Sql values of all columns. Used internally. You are
         /// unlikely to need to call this directly.

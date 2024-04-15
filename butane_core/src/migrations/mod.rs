@@ -322,7 +322,7 @@ impl crate::internal::DataObjectInternal for ButaneMigration {
         }
         values
     }
-    fn save_many_to_many(&mut self, _conn: &impl ConnectionMethods) -> Result<()> {
+    fn save_many_to_many(& self, _conn: &impl ConnectionMethods) -> Result<()> {
         Ok(()) // no-op
     }
 }

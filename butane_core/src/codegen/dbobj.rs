@@ -44,6 +44,7 @@ pub fn impl_dbobject(ast_struct: &ItemStruct, config: &Config) -> TokenStream2 {
             let many_table_lit = many_table_lit(ast_struct, f, config);
             let pksqltype =
                 quote!(<<Self as butane::DataObject>::PKType as butane::FieldType>::SQLTYPE);
+            /*
             // Save needs to ensure_initialized
             quote!(
                 self.#ident.ensure_init(
@@ -52,6 +53,13 @@ pub fn impl_dbobject(ast_struct: &ItemStruct, config: &Config) -> TokenStream2 {
                     #pksqltype,
                 );
                 self.#ident.save(conn)?;
+            )
+             */
+            quote!(
+                match self.#ident.save(conn) {
+                    Err(butane::Error::NotInitialized) | Ok(_) => {},
+                    Err(err) => return Err(err)
+                };
             )
         })
         .collect();
@@ -71,7 +79,7 @@ pub fn impl_dbobject(ast_struct: &ItemStruct, config: &Config) -> TokenStream2 {
             fn pk_mut(&mut self) -> &mut impl butane::PrimaryKeyType {
                 &mut self.#pkident
             }
-            fn save_many_to_many(&mut self, conn: &impl butane::db::ConnectionMethods) -> butane::Result<()> {
+            fn save_many_to_many(&self, conn: &impl butane::db::ConnectionMethods) -> butane::Result<()> {
                 #many_save
                 Ok(())
             }
