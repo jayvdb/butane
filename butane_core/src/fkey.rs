@@ -39,10 +39,13 @@ where
 }
 impl<T: DataObject> ForeignKey<T> {
     /// Create a value from a reference to the primary key of the value
-    pub fn from_pk(pk: T::PKType) -> Self {
+    pub fn from_pk(pk: T::PKType) -> Result<Self> {
+        if !pk().is_valid() {
+            return Err(Error::ValueNotSaved);
+        }
         let ret = Self::new_raw();
         ret.valpk.set(pk.into_sql()).unwrap();
-        ret
+        Ok(ret)
     }
     /// Returns a reference to the value. It must have already been loaded. If not, returns Error::ValueNotLoaded
     pub fn get(&self) -> Result<&T> {
@@ -93,6 +96,7 @@ impl<T: DataObject> ForeignKey<T> {
     }
 }
 
+/*
 impl<T: DataObject> From<T> for ForeignKey<T> {
     fn from(obj: T) -> Self {
         let ret = Self::new_raw();
@@ -100,9 +104,14 @@ impl<T: DataObject> From<T> for ForeignKey<T> {
         ret
     }
 }
-impl<T: DataObject> From<&T> for ForeignKey<T> {
-    fn from(obj: &T) -> Self {
-        Self::from_pk(obj.pk().clone())
+ */
+
+//pub struct InputWrapper<T>(T);
+impl<T: DataObject> TryFrom<&T> for ForeignKey<T> {
+    type Error = &'static str;
+
+    fn try_from(obj: &T) -> std::result::Result<Self, Self::Error> {
+        Ok(Self::from_pk(obj.pk().clone()))
     }
 }
 impl<T: DataObject> Clone for ForeignKey<T> {
@@ -204,7 +213,7 @@ where
     where
         D: Deserializer<'de>,
     {
-        Ok(Self::from_pk(T::PKType::deserialize(deserializer)?))
+        Self::from_pk(T::PKType::deserialize(deserializer)?)
     }
 }
 
