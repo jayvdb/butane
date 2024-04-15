@@ -79,7 +79,7 @@ pub fn impl_dbobject(ast_struct: &ItemStruct, config: &Config) -> TokenStream2 {
                 let mut values: Vec<butane::SqlValRef> = Vec::with_capacity(
                     <Self as butane::DataResult>::COLUMNS.len()
                 );
-                if (include_pk) {
+                if include_pk {
                     #(#values)*
                 } else {
                     #(#values_no_pk)*
