@@ -36,9 +36,10 @@ mod dbobj;
 mod migration;
 
 /// Implementation of `#[butane::model]`.
-pub fn model_with_migrations<M>(
+pub fn model_with_migrations<M, C>(
     input: TokenStream2,
     ms: &mut impl MigrationsMut<M = M>,
+    conn: &impl C,
 ) -> TokenStream2
 where
     M: MigrationMut,

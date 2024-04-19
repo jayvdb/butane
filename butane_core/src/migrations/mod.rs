@@ -27,18 +27,18 @@ mod memmigrations;
 pub use memmigrations::{MemMigration, MemMigrations};
 
 /// A collection of migrations.
-pub trait Migrations {
+pub trait Migrations<C: ConnectionMethods> {
     type M: Migration;
 
     /// Gets the migration with the given name, if it exists
-    fn get_migration(&self, name: &str) -> Option<Self::M>;
+    fn get_migration(self: &Self, name: &str) -> Option<Self::M>;
 
     /// Get the most recent migration (other than `current`) or `None` if
     /// no migrations have been created.
-    fn latest(&self) -> Option<Self::M>;
+    fn latest(self: &Self) -> Option<Self::M>;
 
     /// Returns migrations since the given migration.
-    fn migrations_since(&self, since: &Self::M) -> Result<Vec<Self::M>> {
+    fn migrations_since(self : &Self, since: &Self::M) -> Result<Vec<Self::M>> {
         let mut last = self.latest();
         let mut accum: Vec<Self::M> = Vec::new();
         while let Some(m) = last {
@@ -57,7 +57,7 @@ pub trait Migrations {
     }
 
     /// Returns all migrations
-    fn all_migrations(&self) -> Result<Vec<Self::M>> {
+    fn all_migrations(self: &Self) -> Result<Vec<Self::M>> {
         let mut last = self.latest();
         let mut accum: Vec<Self::M> = Vec::new();
         while let Some(m) = last {
@@ -71,7 +71,7 @@ pub trait Migrations {
     }
 
     /// Get migrations which have not yet been applied to the database
-    fn unapplied_migrations(&self, conn: &impl ConnectionMethods) -> Result<Vec<Self::M>> {
+    fn unapplied_migrations(self: &Self, conn: &C) -> Result<Vec<Self::M>> {
         match self.last_applied_migration(conn)? {
             None => self.all_migrations(),
             Some(m) => self.migrations_since(&m),
@@ -80,7 +80,7 @@ pub trait Migrations {
 
     /// Get the last migration that has been applied to the database or None
     /// if no migrations have been applied
-    fn last_applied_migration(&self, conn: &impl ConnectionMethods) -> Result<Option<Self::M>> {
+    fn last_applied_migration(self: &Self, conn: &C) -> Result<Option<Self::M>> {
         if !conn.has_table(ButaneMigration::TABLE)? {
             return Ok(None);
         }
@@ -112,7 +112,8 @@ pub trait Migrations {
 }
 
 /// Extension of [`Migrations`] to modify the series of migrations.
-pub trait MigrationsMut: Migrations
+//pub trait MigrationsMut<C: ConnectionMethods>: Migrations<C>
+pub trait MigrationsMut<C: ConnectionMethods>: Migrations<C>
 where
     Self::M: MigrationMut,
 {

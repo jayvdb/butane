@@ -424,7 +424,7 @@ impl FsMigrations {
     }
 }
 
-impl Migrations for FsMigrations {
+impl<C: crate::ConnectionMethods> Migrations<C> for FsMigrations {
     type M = FsMigration;
 
     fn get_migration(&self, name: &str) -> Option<Self::M> {
@@ -448,7 +448,7 @@ impl Migrations for FsMigrations {
     }
 }
 
-impl MigrationsMut for FsMigrations {
+impl<C: crate::ConnectionMethods> MigrationsMut<C> for FsMigrations {
     fn current(&mut self) -> &mut Self::M {
         &mut self.current
     }

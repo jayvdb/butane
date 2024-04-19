@@ -13,13 +13,12 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use butane::migrations::adb;
-use butane::migrations::adb::{diff, AColumn, ARef, Operation, ADB};
+use butane::db::{self, Connection, ConnectionMethods};
 use butane::migrations::{
-    copy_migration, FsMigrations, MemMigrations, Migration, MigrationMut, Migrations, MigrationsMut,
+    self, copy_migration, FsMigrations, MemMigrations, Migration, MigrationMut, Migrations, MigrationsMut,
 };
+use butane::migrations::adb::{self, diff, AColumn, ARef, Operation, ADB};
 use butane::query::BoolExpr;
-use butane::{db, db::Connection, db::ConnectionMethods, migrations};
 use cargo_metadata::MetadataCommand;
 use chrono::Utc;
 use nonempty::NonEmpty;

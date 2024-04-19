@@ -126,7 +126,7 @@ impl Default for MemMigrations {
         Self::new()
     }
 }
-impl Migrations for MemMigrations {
+impl<C: crate::ConnectionMethods> Migrations <C> for MemMigrations {
     type M = MemMigration;
     fn get_migration(&self, name: &str) -> Option<Self::M> {
         self.migrations.get(name).cloned()
@@ -139,7 +139,7 @@ impl Migrations for MemMigrations {
     }
 }
 
-impl MigrationsMut for MemMigrations {
+impl<C: crate::ConnectionMethods> MigrationsMut<C> for MemMigrations {
     fn current(&mut self) -> &mut Self::M {
         &mut self.current
     }
