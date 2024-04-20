@@ -10,7 +10,7 @@ use std::sync::Mutex;
 
 use block_id::{Alphabet, BlockId};
 use butane_core::db::{connect, get_backend, pg, sqlite, Backend, Connection, ConnectionSpec};
-use butane_core::migrations::{self, MemMigrations, Migration, Migrations, MigrationsMut};
+use butane_core::migrations::{self, MemMigrations, Migration, Migrations, MigrationsMut, copy_migration};
 use once_cell::sync::Lazy;
 use uuid::Uuid;
 
@@ -180,27 +180,39 @@ pub fn pg_connstr(data: &PgSetupData) -> String {
 }
 
 /// Populate the database schema.
-pub fn setup_db(backend: Box<dyn Backend>, conn: &mut Connection, migrate: bool) {
+pub fn setup_db(backend: Box<dyn Backend>, conn: &mut Connection) {
     let mut root = std::env::current_dir().unwrap();
     root.push(".butane/migrations");
+
     let mut disk_migrations = migrations::from_root(&root);
+
+    if !disk_migrations.is_empty() {
+        log::info!("Loading exising disk migrations from {:?}", disk_migrations);
+        butane_core::migrations::migrate(conn, &disk_migrations).unwrap();
+    } 
     let disk_current = disk_migrations.current();
     log::info!("Loading migrations from {:?}", disk_current);
-    if !migrate {
-        return;
-    }
-    // Create an in-memory Migrations and write only to that. This
-    // allows concurrent tests to avoid stomping on each other and is
-    // also faster than real disk writes.
-    let mut mem_migrations = MemMigrations::new();
-    let mem_current = mem_migrations.current();
-
-    migrations::copy_migration(disk_current, mem_current).unwrap();
-
     assert!(
         disk_current.db().unwrap().tables().count() != 0,
         "No tables to migrate"
     );
+
+    //let created = ms.create_migration(&backends, &name, disk_migrations.latest().as_ref())?;
+
+    let mut mem_migrations = MemMigrations::new();
+
+    let migration_list = disk_migrations.all_migrations().unwrap();
+    for migration in migration_list {
+        let mut mem_migration = mem_migrations.new_migration(&migration.name());
+        copy_migration(&migration, &mut mem_migration).unwrap();
+        mem_migrations.add_migration(mem_migration).unwrap();
+    }
+
+    // Create an in-memory Migrations and write only to that. This
+    // allows concurrent tests to avoid stomping on each other and is
+    // also faster than real disk writes.
+
+    let mem_current = mem_migrations.current();
 
     assert!(
         mem_migrations
@@ -209,11 +221,14 @@ pub fn setup_db(backend: Box<dyn Backend>, conn: &mut Connection, migrate: bool)
         "expected to create migration"
     );
     log::info!("created current migration");
+    // todo apply it
+    /*
     let to_apply = mem_migrations.unapplied_migrations(conn).unwrap();
     for m in to_apply {
         log::info!("Applying migration {}", m.name());
         m.apply(conn).unwrap();
     }
+    */
 }
 
 /// Create a sqlite [`Connection`].
@@ -244,7 +259,9 @@ macro_rules! maketest {
                 let $dataname = butane_test_helper::[<$backend _setup>]();
                 log::info!("connecting to {}..", &$connstr);
                 let mut conn = backend.connect(&$connstr).expect("Could not connect backend");
-                butane_test_helper::setup_db(backend, &mut conn, $migrate);
+                if migrate {
+                    butane_test_helper::setup_db(backend, &mut conn);
+                }
                 log::info!("running test on {}..", &$connstr);
                 $fname(conn);
                 butane_test_helper::[<$backend _teardown>]($dataname);
