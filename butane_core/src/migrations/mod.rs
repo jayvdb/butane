@@ -32,11 +32,13 @@ pub trait Migrations {
 
     /// Gets the migration with the given name, if it exists
     fn get_migration(&self, name: &str) -> Option<Self::M>;
-
     /// Get the most recent migration (other than `current`) or `None` if
     /// no migrations have been created.
     fn latest(&self) -> Option<Self::M>;
-
+    /// Have migrations been created (other than `current`).
+    fn is_empty(&self) -> bool {
+        self.latest().is_some()
+    }
     /// Returns migrations since the given migration.
     fn migrations_since(&self, since: &Self::M) -> Result<Vec<Self::M>> {
         let mut last = self.latest();
