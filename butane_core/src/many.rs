@@ -1,7 +1,6 @@
 //! Implementation of many-to-many relationships between models.
 #![deny(missing_docs)]
 use std::borrow::Cow;
-use std::sync::OnceLock;
 
 #[cfg(feature = "fake")]
 use fake::{Dummy, Faker};
@@ -14,6 +13,9 @@ use crate::query::{BoolExpr, Expr, OrderDirection, Query};
 use crate::util::get_or_init_once_lock;
 #[cfg(feature = "async")]
 use crate::util::get_or_init_once_lock_async;
+
+use crate::oncelock_serde::ButaneOnceLock as OnceLock;
+
 use crate::{sqlval::PrimaryKeyType, DataObject, Error, FieldType, Result, SqlType, SqlVal, ToSql};
 
 fn default_oc<T>() -> OnceLock<Vec<T>> {
@@ -42,7 +44,6 @@ where
     new_values: Vec<SqlVal>,
     #[serde(skip)]
     removed_values: Vec<SqlVal>,
-    #[serde(skip)]
     #[serde(default = "default_oc")]
     all_values: OnceLock<Vec<T>>,
 }
