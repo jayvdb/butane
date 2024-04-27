@@ -9,6 +9,7 @@ publish = false
 doc = false
 
 [features]
+debug = ["butane/log", "butane/debug"]
 default = ["pg", "sqlite", "sqlite-bundled"]
 pg = ["butane/pg"]
 sqlite = ["butane/sqlite"]

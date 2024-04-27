@@ -1,4 +1,8 @@
+
+
+
+
+DROP TABLE Tag;
 DROP TABLE Blog;
 DROP TABLE Post;
 DROP TABLE Post_tags_Many;
-DROP TABLE Tag;

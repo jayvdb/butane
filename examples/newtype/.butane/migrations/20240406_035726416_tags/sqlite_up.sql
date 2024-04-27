@@ -1,3 +1,5 @@
-DROP TABLE Post_tags_Many;
+
+
 DROP TABLE Tag;
+DROP TABLE Post_tags_Many;
 ALTER TABLE Post ADD COLUMN tags TEXT NOT NULL DEFAULT null;

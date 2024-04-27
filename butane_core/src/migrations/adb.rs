@@ -616,7 +616,9 @@ pub fn diff(old: &ADB, new: &ADB) -> Vec<Operation> {
     }
 
     // Remove tables
-    let removed_tables = old_names.difference(&new_names);
+    let removed_tables: Vec<&String> = old_names.difference(&new_names).copied().collect();
+    let removed_tables =
+        reorder_table_drops(old, &removed_tables).expect("failed reordering table drops");
     for removed in removed_tables.clone() {
         let removed: &str = removed.as_ref();
         let table = old.tables.get(removed).expect("no table").clone();
@@ -642,6 +644,29 @@ pub fn diff(old: &ADB, new: &ADB) -> Vec<Operation> {
         }
     }
     ops
+}
+
+/// Drop tables without dependencies first.
+fn reorder_table_drops(old: &ADB, removed_table_names: &[&String]) -> Result<Vec<String>> {
+    use std::collections::HashSet;
+    let removed_table_names: HashSet<&String> = removed_table_names.iter().copied().collect();
+    let mut new_table_order: Vec<String> = vec![];
+    while new_table_order.len() != removed_table_names.len() {
+        for removed_table_name in &removed_table_names {
+            let removed_table = old
+                .tables
+                .get(*removed_table_name)
+                .ok_or(Error::MigrationError("Table should exist".to_string()))?;
+            for column in &removed_table.columns {
+                if let Some(_reference) = &column.reference {
+                    continue;
+                }
+            }
+            // No columns are a reference, so this table can be dropped first.
+            new_table_order.push((**removed_table_name).clone());
+        }
+    }
+    Ok(new_table_order)
 }
 
 fn col_by_name<'a>(columns: &'a [AColumn], name: &str) -> Option<&'a AColumn> {
