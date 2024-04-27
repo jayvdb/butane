@@ -648,24 +648,40 @@ pub fn diff(old: &ADB, new: &ADB) -> Vec<Operation> {
 
 /// Drop tables without dependencies first.
 fn reorder_table_drops(old: &ADB, removed_table_names: &[&String]) -> Result<Vec<String>> {
-    use std::collections::HashSet;
-    let removed_table_names: HashSet<&String> = removed_table_names.iter().copied().collect();
+    let mut removed_table_names: BTreeSet<&String> = removed_table_names.iter().copied().collect();
     let mut new_table_order: Vec<String> = vec![];
-    while new_table_order.len() != removed_table_names.len() {
-        for removed_table_name in &removed_table_names {
+    let mut changed = true;
+    while changed {
+        changed = false;
+        'outer: for removed_table_name in removed_table_names.clone() {
             let removed_table = old
                 .tables
-                .get(*removed_table_name)
+                .get(removed_table_name)
                 .ok_or(Error::MigrationError("Table should exist".to_string()))?;
+            eprintln!("Looking at {removed_table_name}");
             for column in &removed_table.columns {
-                if let Some(_reference) = &column.reference {
-                    continue;
+                if let Some(ARef::Literal(ARefLiteral { table_name, .. })) = &column.reference {
+                    eprintln!("found ref to {table_name:?}");
+                    if !new_table_order.contains(table_name) {
+                        continue 'outer;
+                    }
                 }
             }
             // No columns are a reference, so this table can be dropped first.
-            new_table_order.push((**removed_table_name).clone());
+            eprintln!("Removing {removed_table_name}");
+            new_table_order.push((*removed_table_name).clone());
+            removed_table_names.remove(removed_table_name);
+            changed = true;
         }
     }
+
+    //use std::collections::hash_set::Drain;
+    // Any remaining tables are unable to be ordered.
+    eprintln!("oops: {removed_table_names:?}");
+    for removed_table_name in removed_table_names.iter() {
+        new_table_order.push((*removed_table_name).clone());
+    }
+
     Ok(new_table_order)
 }
 
