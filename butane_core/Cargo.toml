@@ -21,7 +21,7 @@ pg = ["async", "bytes", "tokio-postgres"]
 sqlite = ["rusqlite"]
 sqlite-bundled = ["rusqlite/bundled"]
 tls = ["native-tls", "postgres-native-tls"]
-
+use-dataobject-after-fkey = []
 
 [dependencies]
 async-trait = { workspace = true}

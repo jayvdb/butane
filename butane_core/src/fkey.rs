@@ -143,6 +143,7 @@ impl<T: DataObject> From<T> for ForeignKey<T> {
         ret
     }
 }
+#[cfg(feature = "use-dataobject-after-fkey")]
 impl<T: DataObject> From<&T> for ForeignKey<T> {
     fn from(obj: &T) -> Self {
         Self::from_pk(obj.pk().clone())

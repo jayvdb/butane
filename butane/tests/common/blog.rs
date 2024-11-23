@@ -9,9 +9,10 @@ use butane::{
 use chrono::{naive::NaiveDateTime, offset::Utc};
 #[cfg(feature = "fake")]
 use fake::Dummy;
+use serde::{Deserialize, Serialize};
 
 #[model]
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 #[cfg_attr(feature = "fake", derive(Dummy))]
 pub struct Blog {
     pub id: i64,
@@ -28,7 +29,7 @@ impl Blog {
 
 #[cfg(feature = "datetime")]
 #[model]
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Deserialize, Serialize)]
 #[cfg_attr(feature = "fake", derive(Dummy))]
 pub struct Post {
     pub id: i64,
@@ -56,7 +57,7 @@ pub struct Post {
 }
 
 impl Post {
-    pub fn new(id: i64, title: &str, body: &str, blog: &Blog) -> Self {
+    pub fn new(id: i64, title: &str, body: &str, blog: Blog) -> Self {
         Post {
             id,
             title: title.to_string(),
@@ -89,7 +90,7 @@ pub struct PostMetadata {
 }
 
 #[model]
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "fake", derive(Dummy))]
 #[table = "tags"]
 pub struct Tag {
@@ -146,7 +147,7 @@ pub async fn setup_blog(conn: &Connection) {
         1,
         "The Tiger",
         "The tiger is a cat which would very much like to eat you.",
-        &cats_blog,
+        cats_blog.clone(),
     );
     post.published = true;
     #[cfg(feature = "datetime")]
@@ -162,7 +163,7 @@ pub async fn setup_blog(conn: &Connection) {
         2,
         "Sir Charles",
         "Sir Charles (the Very Second) is a handsome orange gentleman",
-        &cats_blog,
+        cats_blog,
     );
     post.published = true;
     post.likes = 20;
@@ -172,7 +173,7 @@ pub async fn setup_blog(conn: &Connection) {
         3,
         "Mount Doom",
         "You must throw the ring into Mount Doom. Then you get to ride on a cool eagle.",
-        &mountains_blog,
+        mountains_blog.clone(),
     );
     post.published = true;
     post.likes = 10;
@@ -183,7 +184,7 @@ pub async fn setup_blog(conn: &Connection) {
         4,
         "Mt. Everest",
         "Everest has very little air, and lately it has very many people. This post is unfinished.",
-        &mountains_blog,
+        mountains_blog,
     );
     post.published = false;
     post.tags.add(&tag_danger).unwrap();
