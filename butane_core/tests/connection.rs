@@ -528,22 +528,23 @@ fn pg_key_value_pairs_dbname_only() {
 }
 
 #[test]
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "linux")]
 fn pg_key_value_pairs_abstract_namespace_unix_socket() {
     let pg_server = pg_tmp_server_create(PgServerOptions {
-        #[cfg(not(target_os = "macos"))]
         abstract_namespace: true,
+        port: Some(5432),
         ..PgServerOptions::default()
     })
     .unwrap();
     let host = pg_server.sockdir.path().to_str().unwrap();
 
     let pairs = format!("host=@{host} user=postgres");
+    eprintln!("Connecting to {pairs}");
     let spec = ConnectionSpec::try_from(&pairs).unwrap();
     assert_eq!(spec.backend_name(), "pg");
     assert_eq!(spec.connection_string(), &pairs);
     // https://github.com/sfackler/rust-postgres/issues/1240
-    // connect(&spec).unwrap();
+    connect(&spec).unwrap();
 }
 
 #[test]
@@ -612,7 +613,7 @@ fn uri_pg_postgresql_scheme_abstract_namespace_unix_socket() {
 
     // This feature is not supported on macOS.
     // #[cfg(not(target_os = "macos"))]
-    // connect(&spec).unwrap();
+    connect(&spec).unwrap();
 
     // The host part needs to be percent encoded if put into the host of the URI.
     let host = host.replace('/', "%2F");

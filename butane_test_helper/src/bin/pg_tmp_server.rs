@@ -7,6 +7,7 @@ fn main() {
     // Start the PostgreSQL server
     let server = pg_tmp_server_create(PgServerOptions {
         port: Some(5432),
+        abstract_namespace: true,
         ..Default::default()
     })
     .unwrap();

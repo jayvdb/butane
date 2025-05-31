@@ -309,6 +309,7 @@ pub fn pg_tmp_server_create(
         // Set host='' to prevent postgres from trying to use TCP/IP
         command.arg("-h").arg("");
     }
+    eprintln!("Running command: {:?}", command);
     let result = command.spawn();
     if let Err(e) = result {
         eprintln!("failed to run postgres");
