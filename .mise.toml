@@ -1,0 +1,4 @@
+[tools]
+osv-scanner = "latest"
+rust = "stable"
+typos = "latest"
