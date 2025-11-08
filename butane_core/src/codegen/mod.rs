@@ -82,6 +82,22 @@ static PATH_MAPPINGS: Map<&'static str, &'static str> = phf_map! {
 const PATH_RESOLVER: PathResolver<&'static Map<&'static str, &'static str>> =
     create_static_resolver(&PATH_MAPPINGS, true);
 
+/// Core implementation shared by both `#[model]` and `#[derive(Model)]`.
+/// Returns the trait implementations and field expressions.
+fn model_impl<M>(
+    ast_struct: &ItemStruct,
+    ms: &mut impl MigrationsMut<M = M>,
+) -> (TokenStream2, TokenStream2)
+where
+    M: MigrationMut,
+{
+    let config: dbobj::Config = config_from_attributes(ast_struct);
+    migration::write_table_to_disk(ms, ast_struct, &config).unwrap();
+    let impltraits = dbobj::impl_dbobject(ast_struct, &config);
+    let fieldexprs = dbobj::add_fieldexprs(ast_struct, &config);
+    (impltraits, fieldexprs)
+}
+
 /// Implementation of `#[butane::model]`.
 pub fn model_with_migrations<M>(
     input: TokenStream2,
@@ -94,17 +110,12 @@ where
     // attributes but proc macro attributes can't yet (nor can they
     // create field attributes)
     let mut ast_struct: ItemStruct = syn::parse2(input).unwrap();
-    let config: dbobj::Config = config_from_attributes(&ast_struct);
 
     // Filter out our helper attributes
     let attrs: Vec<Attribute> = filter_helper_attributes(&ast_struct);
-
     let vis = &ast_struct.vis;
 
-    migration::write_table_to_disk(ms, &ast_struct, &config).unwrap();
-
-    let impltraits = dbobj::impl_dbobject(&ast_struct, &config);
-    let fieldexprs = dbobj::add_fieldexprs(&ast_struct, &config);
+    let (impltraits, fieldexprs) = model_impl(&ast_struct, ms);
 
     let fields: Punctuated<Field, syn::token::Comma> =
         match remove_helper_field_attributes(&mut ast_struct.fields) {
@@ -119,6 +130,26 @@ where
         #vis struct #ident {
             #fields
         }
+        #impltraits
+        #fieldexprs
+    )
+}
+
+/// Implementation for `#[derive(Model)]`.
+///
+/// Unlike the attribute macro version, this only generates the trait implementations
+/// and does not re-emit the struct definition (as derive macros should not).
+pub fn derive_model_with_migrations<M>(
+    input: TokenStream2,
+    ms: &mut impl MigrationsMut<M = M>,
+) -> TokenStream2
+where
+    M: MigrationMut,
+{
+    let ast_struct: ItemStruct = syn::parse2(input).unwrap();
+    let (impltraits, fieldexprs) = model_impl(&ast_struct, ms);
+
+    quote!(
         #impltraits
         #fieldexprs
     )
