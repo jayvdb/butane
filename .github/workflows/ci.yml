@@ -107,7 +107,7 @@ jobs:
     - name: Run editorconfig-checker
       run: editorconfig-checker
     - name: Build
-      run: make build
+      run: cargo +stable test --all-features
     - name: Lint
       run: make lint-ci
     - name: Run cargo-deny
